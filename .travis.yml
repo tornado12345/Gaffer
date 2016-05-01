@@ -1,3 +1,5 @@
 language: java
 install: mvn install -PreducedMemory -Dfindbugs.skip=true
-script: mvn findbugs:findbugs && mvn javadoc:javadoc && mvn cobertura:cobertura -Dfindbugs.skip=true
+script:
+    - mvn findbugs:findbugs && mvn javadoc:javadoc
+    - mvn cobertura:cobertura -PreducedMemory -DskipTests -Dfindbugs.skip=true
