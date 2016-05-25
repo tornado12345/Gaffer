@@ -287,7 +287,7 @@ public final class Graph {
 
         private void updateStore() {
             if (null == store) {
-                store = createStore(properties, schema);
+                store = Store.createStore(properties, schema);
             } else if (null != properties || null != schema) {
                 if (null == properties || null == schema) {
                     throw new IllegalArgumentException("To initialise a provided store both a schema and store properties are required");
@@ -301,31 +301,6 @@ public final class Graph {
                 store.optimiseSchemas();
                 store.validateSchemas();
             }
-        }
-
-        private Store createStore(final StoreProperties storeProperties, final Schema schema) {
-            if (null == storeProperties || null == schema) {
-                throw new IllegalArgumentException("Store properties and schema are required to create a store");
-            }
-
-            final String storeClass = storeProperties.getStoreClass();
-            if (null == storeClass) {
-                throw new IllegalArgumentException("The Store class name was not found in the store properties for key: " + StoreProperties.STORE_PROPERTIES_CLASS);
-            }
-
-            final Store newStore;
-            try {
-                newStore = Class.forName(storeClass).asSubclass(Store.class).newInstance();
-            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-                throw new IllegalArgumentException("Could not create store of type: " + storeClass, e);
-            }
-
-            try {
-                newStore.initialise(schema, storeProperties);
-            } catch (StoreException e) {
-                throw new IllegalArgumentException("Could not initialise the store with provided arguments.", e);
-            }
-            return newStore;
         }
 
         private void updateView() {

@@ -91,6 +91,31 @@ public abstract class Store {
 
     private ViewValidator viewValidator;
 
+    public static Store createStore(final StoreProperties storeProperties, final Schema schema) {
+        if (null == storeProperties || null == schema) {
+            throw new IllegalArgumentException("Store properties and schema are required to create a store");
+        }
+
+        final String storeClass = storeProperties.getStoreClass();
+        if (null == storeClass) {
+            throw new IllegalArgumentException("The Store class name was not found in the store properties for key: " + StoreProperties.STORE_PROPERTIES_CLASS);
+        }
+
+        final Store newStore;
+        try {
+            newStore = Class.forName(storeClass).asSubclass(Store.class).newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            throw new IllegalArgumentException("Could not create store of type: " + storeClass, e);
+        }
+
+        try {
+            newStore.initialise(schema, storeProperties);
+        } catch (StoreException e) {
+            throw new IllegalArgumentException("Could not initialise the store with provided arguments.", e);
+        }
+        return newStore;
+    }
+
     public void initialise(final Schema schema, final StoreProperties properties) throws StoreException {
         this.schema = schema;
         this.properties = properties;

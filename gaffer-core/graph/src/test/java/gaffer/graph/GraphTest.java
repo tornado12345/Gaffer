@@ -70,7 +70,7 @@ public class GraphTest {
     @Test
     public void shouldConstructGraphFromSchemaModules() {
         // Given
-        final StoreProperties storeProperties = new StoreProperties(StoreImpl.class);
+        final StoreProperties storeProperties = new StoreProperties(StoreImplForTest.class);
         final Schema schemaModule1 = new Schema.Builder()
                 .type(TestTypes.PROP_STRING, new TypeDefinition.Builder()
                         .clazz(String.class)
@@ -357,7 +357,7 @@ public class GraphTest {
         verify(operation, Mockito.never()).setView(view);
     }
 
-    static class StoreImpl extends Store {
+    public static class StoreImplForTest extends Store {
 
         @Override
         public Set<StoreTrait> getTraits() {
