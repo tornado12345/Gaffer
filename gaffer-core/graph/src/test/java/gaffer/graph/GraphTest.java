@@ -101,7 +101,6 @@ public class GraphTest {
                         .build())
                 .buildModule();
 
-
         // When
         final Graph graph = new Graph.Builder()
                 .storeProperties(storeProperties)

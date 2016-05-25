@@ -16,17 +16,6 @@
 
 package gaffer.spark;
 
-import java.io.IOException;
-import java.util.Map.Entry;
-
-import org.apache.accumulo.core.client.mapreduce.InputFormatBase;
-import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.core.util.format.DefaultFormatter;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-
 import gaffer.accumulostore.key.AccumuloElementConverter;
 import gaffer.accumulostore.key.AccumuloKeyPackage;
 import gaffer.accumulostore.key.exception.AccumuloElementConversionException;
@@ -37,13 +26,21 @@ import gaffer.exception.SerialisationException;
 import gaffer.serialisation.simple.StringSerialiser;
 import gaffer.store.StoreException;
 import gaffer.store.schema.Schema;
+import org.apache.accumulo.core.client.mapreduce.InputFormatBase;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.util.format.DefaultFormatter;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import java.io.IOException;
+import java.util.Map.Entry;
 
 /**
  * An {@link InputFormatBase} that allows a MapReduce job to consume data from the
  * Accumulo table underlying Gaffer.
  */
 public class ElementInputFormat extends InputFormatBase<Element, Properties> {
-
     public static final String KEY_PACKAGE = "KEY_PACKAGE";
     public static final String SCHEMA = "SCHEMA";
 
@@ -51,8 +48,8 @@ public class ElementInputFormat extends InputFormatBase<Element, Properties> {
     public RecordReader<Element, Properties> createRecordReader(final InputSplit split, final TaskAttemptContext context)
             throws IOException, InterruptedException {
         log.setLevel(getLogLevel(context));
-        String keyPackageClass = context.getConfiguration().get(KEY_PACKAGE);
-        String schema = context.getConfiguration().get(SCHEMA);
+        final String keyPackageClass = context.getConfiguration().get(KEY_PACKAGE);
+        final String schema = context.getConfiguration().get(SCHEMA);
         try {
             return new ElementWithPropertiesRecordReader(keyPackageClass, schema);
         } catch (StoreException | SchemaException | SerialisationException e) {
@@ -62,13 +59,12 @@ public class ElementInputFormat extends InputFormatBase<Element, Properties> {
     }
 
     class ElementWithPropertiesRecordReader extends InputFormatBase.RecordReaderBase<Element, Properties> {
-
         private AccumuloElementConverter converter;
         private StringSerialiser serialiser = new StringSerialiser();
 
         ElementWithPropertiesRecordReader(final String keyPackageClass, final String schema) throws StoreException, SchemaException, SerialisationException {
             super();
-            AccumuloKeyPackage keyPackage;
+            final AccumuloKeyPackage keyPackage;
             try {
                 keyPackage = Class.forName(keyPackageClass).asSubclass(AccumuloKeyPackage.class).newInstance();
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
@@ -82,7 +78,7 @@ public class ElementInputFormat extends InputFormatBase<Element, Properties> {
         public boolean nextKeyValue() throws IOException, InterruptedException {
             if (scannerIterator.hasNext()) {
                 ++numKeysRead;
-                Entry<Key, Value> entry = scannerIterator.next();
+                final Entry<Key, Value> entry = scannerIterator.next();
 
                 try {
                     currentK = converter.getFullElement(entry.getKey(), entry.getValue());

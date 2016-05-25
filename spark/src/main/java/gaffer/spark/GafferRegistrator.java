@@ -16,18 +16,15 @@
 
 package gaffer.spark;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-
 import gaffer.data.element.Edge;
 import gaffer.data.element.Element;
 import gaffer.data.element.Entity;
 import gaffer.data.element.Properties;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.Serializer;
-
 import org.apache.spark.serializer.KryoRegistrator;
 
 /**
@@ -37,62 +34,60 @@ public class GafferRegistrator implements KryoRegistrator {
 
     @Override
     public void registerClasses(final Kryo kryo) {
-        kryo.register(Element.class, new KryoWritableSerializer<Element>());
-        kryo.register(Entity.class, new KryoWritableSerializer<Entity>());
-        kryo.register(Edge.class, new KryoWritableSerializer<Edge>());
+        kryo.register(Element.class, new KryoWritableSerializer());
+        kryo.register(Entity.class, new KryoWritableSerializer());
+        kryo.register(Edge.class, new KryoWritableSerializer());
     }
-}
 
-class KryoWritableSerializer<T extends Element> extends Serializer<Element> {
+    public static class KryoWritableSerializer extends Serializer<Element> {
 
-    @Override
-    public void write(final Kryo kryo, final Output output, final Element object) {
+        @Override
+        public void write(final Kryo kryo, final Output output, final Element element) {
+            output.writeString(element.getGroup());
+            kryo.writeClass(output, element.getClass());
+            kryo.writeObjectOrNull(output, element.getProperties(), Properties.class);
 
-        output.writeString(object.getGroup());
-        kryo.writeClass(output, object.getClass());
-        kryo.writeObjectOrNull(output, object.getProperties(), Properties.class);
-
-        if (object instanceof Entity) {
-            Entity e = (Entity) object;
-            kryo.writeClass(output, e.getVertex().getClass());
-            kryo.writeObjectOrNull(output, e.getVertex(), e.getVertex().getClass());
-        } else if (object instanceof Edge) {
-            Edge e = (Edge) object;
-            kryo.writeClass(output, e.getSource().getClass());
-            kryo.writeObjectOrNull(output, e.getSource(), e.getSource().getClass());
-            kryo.writeClass(output, e.getDestination().getClass());
-            kryo.writeObjectOrNull(output, e.getDestination(), e.getDestination().getClass());
-            kryo.writeObjectOrNull(output, e.isDirected(), Boolean.class);
+            if (element instanceof Entity) {
+                final Entity e = (Entity) element;
+                kryo.writeClass(output, e.getVertex().getClass());
+                kryo.writeObjectOrNull(output, e.getVertex(), e.getVertex().getClass());
+            } else if (element instanceof Edge) {
+                final Edge e = (Edge) element;
+                kryo.writeClass(output, e.getSource().getClass());
+                kryo.writeObjectOrNull(output, e.getSource(), e.getSource().getClass());
+                kryo.writeClass(output, e.getDestination().getClass());
+                kryo.writeObjectOrNull(output, e.getDestination(), e.getDestination().getClass());
+                kryo.writeObjectOrNull(output, e.isDirected(), Boolean.class);
+            }
         }
-    }
 
-    @Override
-    public Element read(final Kryo kryo, final Input input, final Class<Element> type) {
+        @Override
+        public Element read(final Kryo kryo, final Input input, final Class<Element> type) {
+            final String group = input.readString();
+            Registration reg = kryo.readClass(input);
+            final Properties props = kryo.readObjectOrNull(input, Properties.class);
 
-        String group = input.readString();
-        Registration reg = kryo.readClass(input);
-        Properties props = kryo.readObjectOrNull(input, Properties.class);
+            if (reg.getType().equals(Entity.class)) {
+                reg = kryo.readClass(input);
+                Object vertex = kryo.readObjectOrNull(input, reg.getType());
+                Entity entity = new Entity(group, vertex);
 
-        if (reg.getType().equals(Entity.class)) {
-            reg = kryo.readClass(input);
-            Object vertex = kryo.readObjectOrNull(input, reg.getType());
-            Entity entity = new Entity(group, vertex);
+                if (props != null) {
+                    entity.copyProperties(props);
+                }
+                return entity;
+            } else {
+                reg = kryo.readClass(input);
+                final Object source = kryo.readObjectOrNull(input, reg.getType());
+                reg = kryo.readClass(input);
+                final Object destination = kryo.readObjectOrNull(input, reg.getType());
+                final Edge edge = new Edge(group, source, destination, kryo.readObjectOrNull(input, Boolean.class));
 
-            if (props != null) {
-                entity.copyProperties(props);
+                if (props != null) {
+                    edge.copyProperties(props);
+                }
+                return edge;
             }
-            return entity;
-        } else {
-            reg = kryo.readClass(input);
-            Object source = kryo.readObjectOrNull(input, reg.getType());
-            reg = kryo.readClass(input);
-            Object destination = kryo.readObjectOrNull(input, reg.getType());
-            Edge edge = new Edge(group, source, destination, kryo.readObjectOrNull(input, Boolean.class));
-
-            if (props != null) {
-                edge.copyProperties(props);
-            }
-            return edge;
         }
     }
 }

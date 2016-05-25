@@ -16,13 +16,25 @@
 
 package gaffer.spark;
 
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
+import gaffer.accumulostore.AccumuloStore;
+import gaffer.accumulostore.key.AccumuloKeyPackage;
+import gaffer.accumulostore.key.exception.IteratorSettingException;
+import gaffer.accumulostore.key.exception.RangeFactoryException;
+import gaffer.accumulostore.operation.impl.GetEdgesBetweenSets;
+import gaffer.accumulostore.operation.impl.GetElementsInRanges;
+import gaffer.accumulostore.utils.IteratorSettingBuilder;
+import gaffer.accumulostore.utils.Pair;
+import gaffer.commonutil.CommonConstants;
+import gaffer.data.element.function.ElementFilter;
+import gaffer.data.elementdefinition.exception.SchemaException;
+import gaffer.data.elementdefinition.view.View;
+import gaffer.data.elementdefinition.view.ViewElementDefinition;
+import gaffer.function.simple.filter.IsLessThan;
+import gaffer.function.simple.filter.IsMoreThan;
+import gaffer.operation.data.EdgeSeed;
+import gaffer.operation.data.EntitySeed;
+import gaffer.operation.impl.get.GetRelatedElements;
+import gaffer.store.StoreException;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.ClientConfiguration;
@@ -38,27 +50,13 @@ import org.apache.accumulo.core.security.Authorizations;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import gaffer.accumulostore.utils.IteratorSettingBuilder;
-import gaffer.accumulostore.utils.Pair;
-import gaffer.commonutil.CommonConstants;
-import gaffer.accumulostore.AccumuloStore;
-import gaffer.accumulostore.key.AccumuloKeyPackage;
-import gaffer.accumulostore.key.exception.IteratorSettingException;
-import gaffer.accumulostore.key.exception.RangeFactoryException;
-import gaffer.accumulostore.operation.impl.GetEdgesBetweenSets;
-import gaffer.accumulostore.operation.impl.GetElementsInRanges;
-import gaffer.data.element.Element;
-import gaffer.data.element.function.ElementFilter;
-import gaffer.data.elementdefinition.exception.SchemaException;
-import gaffer.data.elementdefinition.view.View;
-import gaffer.data.elementdefinition.view.ViewElementDefinition;
-import gaffer.function.simple.filter.IsLessThan;
-import gaffer.function.simple.filter.IsMoreThan;
-import gaffer.operation.data.EdgeSeed;
-import gaffer.operation.data.EntitySeed;
-import gaffer.operation.impl.get.GetRelatedElements;
-import gaffer.store.StoreException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * A custom configuration class that sets the configuration for MapReduce Jobs
@@ -77,12 +75,12 @@ public class GraphConfig {
     protected boolean returnEntities;
     protected boolean returnEdges;
     protected ViewElementDefinition viewDef;
-    protected Set<String> entityGroups;
-    protected Set<String> edgeGroups;
+    protected final Set<String> entityGroups;
+    protected final Set<String> edgeGroups;
 
-    protected AccumuloStore store;
+    protected final AccumuloStore store;
     protected Instance instance;
-    protected AccumuloKeyPackage keyPackage;
+    protected final AccumuloKeyPackage keyPackage;
     protected IteratorSetting keySetting;
 
     public GraphConfig(final AccumuloStore store) {
@@ -112,7 +110,6 @@ public class GraphConfig {
      * or edges only or entities and edges). This allows a MapReduce job that uses
      * the {@link Configuration} to receive data that is subject to the same view
      * as is on the graph.
-     *
      * Note that this method will not produce the same edge twice.
      *
      * @param conf The {@link Configuration} for a MapReduce job.
@@ -136,11 +133,10 @@ public class GraphConfig {
      * involves the given {@link Object} vertices. This allows a MapReduce job that
      * uses the {@link Configuration} to receive data that only involves the given
      * {@link Object}s and is subject to the same view as is on the graph.
-     *
      * Note that this method may cause the same edge to be returned
      * twice if both ends are in the provided set.
      *
-     * @param conf The {@link Configuration} for a MapReduce job.
+     * @param conf     The {@link Configuration} for a MapReduce job.
      * @param vertices The vertices to be queried for.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
@@ -154,12 +150,12 @@ public class GraphConfig {
             addRollUpAndAuthsToConfiguration(conf);
             addViewsToConfiguration(conf);
             addKeyPackageAndSchemaToConfiguration(conf);
-            Set<Range> ranges = new HashSet<>();
+            final Set<Range> ranges = new HashSet<>();
 
             for (Object vertex : vertices) {
-                EntitySeed seed = new EntitySeed(vertex);
+                final EntitySeed seed = new EntitySeed(vertex);
                 ranges.addAll(keyPackage.getRangeFactory().getRange(seed,
-                        new GetRelatedElements<EntitySeed, Element>(Collections.singletonList(seed))));
+                        new GetRelatedElements<>(Collections.singletonList(seed))));
             }
             InputConfigurator.setRanges(AccumuloInputFormat.class, conf, ranges);
         } catch (AccumuloSecurityException | StoreException | AccumuloException e) {
@@ -177,11 +173,10 @@ public class GraphConfig {
      * MapReduce job that uses the {@link Configuration} to only receive data that
      * involves the given vertex range and is subject to the same view as is on
      * the graph.
-     *
      * Note that this method may cause the same edge to be returned
      * twice if both ends are in the provided range.
      *
-     * @param conf The {@link Configuration} for a MapReduce job.
+     * @param conf        The {@link Configuration} for a MapReduce job.
      * @param vertexRange The range of vertices to be queried for.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
@@ -197,11 +192,10 @@ public class GraphConfig {
      * is in the given range made up of {@link Pair}s of vertices. This allows a
      * MapReduce job that uses the {@link Configuration} to only receive data that
      * involves the given ranges and is subject to the same view as is on the graph.
-     *
      * Note that this method may cause the same edge to be returned
      * twice if both ends are in the provided ranges.
      *
-     * @param conf The {@link Configuration} for a MapReduce job.
+     * @param conf         The {@link Configuration} for a MapReduce job.
      * @param vertexRanges The ranges of vertices to be queried for.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
@@ -219,9 +213,9 @@ public class GraphConfig {
                 final ArrayList<Range> ran = new ArrayList<>();
 
                 ran.addAll(keyPackage.getRangeFactory().getRange(seedRange.getFirst(),
-                        new GetElementsInRanges<Pair<EntitySeed>, Element>(Collections.singletonList(seedRange))));
+                        new GetElementsInRanges<>(Collections.singletonList(seedRange))));
                 ran.addAll(keyPackage.getRangeFactory().getRange(seedRange.getSecond(),
-                        new GetElementsInRanges<Pair<EntitySeed>, Element>(Collections.singletonList(seedRange))));
+                        new GetElementsInRanges<>(Collections.singletonList(seedRange))));
 
                 Range min = null;
                 Range max = null;
@@ -253,7 +247,7 @@ public class GraphConfig {
      * job that uses the {@link Configuration} to only receive edges that involves the
      * given pair of vertices and is subject to the same view as is on the graph.
      *
-     * @param conf The {@link Configuration} for a MapReduce job.
+     * @param conf       The {@link Configuration} for a MapReduce job.
      * @param vertexPair The pair of vertices to be queried for.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
@@ -270,7 +264,7 @@ public class GraphConfig {
      * that involves the given pairs of vertices and is subject to the same view
      * as is on the graph.
      *
-     * @param conf The {@link Configuration} for a MapReduce job.
+     * @param conf        The {@link Configuration} for a MapReduce job.
      * @param vertexPairs The pairs of vertices to be queried for.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
@@ -283,10 +277,10 @@ public class GraphConfig {
             addRollUpAndAuthsToConfiguration(conf);
             addViewsToConfiguration(conf);
             addKeyPackageAndSchemaToConfiguration(conf);
-            Set<Range> ranges = new HashSet<>();
+            final Set<Range> ranges = new HashSet<>();
             for (Pair<Object> vertexPair : vertexPairs) {
-                EdgeSeed seed1 = new EdgeSeed(vertexPair.getFirst(), vertexPair.getSecond(), true);
-                EdgeSeed seed2 = new EdgeSeed(vertexPair.getSecond(), vertexPair.getFirst(), true);
+                final EdgeSeed seed1 = new EdgeSeed(vertexPair.getFirst(), vertexPair.getSecond(), true);
+                final EdgeSeed seed2 = new EdgeSeed(vertexPair.getSecond(), vertexPair.getFirst(), true);
 
                 ranges.addAll(
                         keyPackage.getRangeFactory().getRange(seed1,
@@ -312,23 +306,25 @@ public class GraphConfig {
      *
      * @param conf The {@link Configuration} for a MapReduce job.
      * @throws AccumuloSecurityException If there is a failure to connect to accumulo.
-     * @throws StoreException If there is a failure to connect to accumulo.
-     * @throws AccumuloException If there is a failure to connect to accumulo.
+     * @throws StoreException            If there is a failure to connect to accumulo.
+     * @throws AccumuloException         If there is a failure to connect to accumulo.
      */
     protected void addAccumuloInfoToConfiguration(final Configuration conf)
             throws AccumuloSecurityException, StoreException, AccumuloException {
         // Table
         InputConfigurator.setInputTableName(AccumuloInputFormat.class, conf, store.getProperties().getTable());
+
         // Connector
         InputConfigurator.setConnectorInfo(AccumuloInputFormat.class, conf, store.getProperties().getUserName(),
                 new PasswordToken(store.getProperties().getPassword()));
+
         // Authorizations
         InputConfigurator.setScanAuthorizations(AccumuloInputFormat.class, conf, authorizations);
 
         // Zookeeper
         InputConfigurator.setZooKeeperInstance(AccumuloInputFormat.class, conf,
                 new ClientConfiguration().withInstance(store.getProperties().getInstanceName())
-                .withZkHosts(store.getProperties().getZookeepers()));
+                        .withZkHosts(store.getProperties().getZookeepers()));
     }
 
     /**
@@ -353,9 +349,8 @@ public class GraphConfig {
      * @param conf The {@link Configuration} for a MapReduce job.
      */
     protected void addViewsToConfiguration(final Configuration conf) {
-
-        View.Builder builder = new View.Builder();
-        ArrayList<View> views = new ArrayList<>();
+        final View.Builder builder = new View.Builder();
+        final List<View> views = new ArrayList<>();
         if (returnEntities) {
             builder.entities(entityGroups);
             if (viewDef != null) {
@@ -457,16 +452,18 @@ public class GraphConfig {
      * {@link Comparable} value is at or after the first value and at or before
      * the second value. The values relate to a given property {@link String}.
      *
-     * @param prop
-     *            The property relating to the range of values.
-     * @param start
-     *            The start value of the range to be queried.
-     * @param end
-     *            The end value of the range to be queried.
+     * @param prop  The property relating to the range of values.
+     * @param start The start value of the range to be queried.
+     * @param end   The end value of the range to be queried.
      */
     public void setRange(final String prop, final Comparable start, final Comparable end) {
-        viewDef = new ViewElementDefinition.Builder().filter(new ElementFilter.Builder().select(prop)
-                .execute(new IsMoreThan(start)).select(prop).execute(new IsLessThan(end)).build()).build();
+        viewDef = new ViewElementDefinition.Builder()
+                .filter(new ElementFilter.Builder().select(prop)
+                        .execute(new IsMoreThan(start))
+                        .select(prop)
+                        .execute(new IsLessThan(end))
+                        .build())
+                .build();
     }
 
     /**
@@ -474,14 +471,16 @@ public class GraphConfig {
      * {@link Comparable} value is at or before the value supplied. The value
      * relates to a given property {@link String}.
      *
-     * @param prop
-     *            The property relating to the range of values.
-     * @param end
-     *            The start value of the range to be queried.
+     * @param prop The property relating to the range of values.
+     * @param end  The start value of the range to be queried.
      */
     public void setBefore(final String prop, final Comparable end) {
         viewDef = new ViewElementDefinition.Builder()
-                .filter(new ElementFilter.Builder().select(prop).execute(new IsLessThan(end)).build()).build();
+                .filter(new ElementFilter.Builder()
+                        .select(prop)
+                        .execute(new IsLessThan(end))
+                        .build())
+                .build();
     }
 
     /**
@@ -489,23 +488,23 @@ public class GraphConfig {
      * {@link Comparable} value is at or after the value supplied. The value
      * relates to a given property {@link String}.
      *
-     * @param prop
-     *            The property relating to the range of values.
-     * @param start
-     *            The start value of the range to be queried.
+     * @param prop  The property relating to the range of values.
+     * @param start The start value of the range to be queried.
      */
     public void setAfter(final String prop, final Comparable start) {
         viewDef = new ViewElementDefinition.Builder()
-
-                .filter(new ElementFilter.Builder().select(prop).execute(new IsMoreThan(start)).build()).build();
+                .filter(new ElementFilter.Builder()
+                        .select(prop)
+                        .execute(new IsMoreThan(start))
+                        .build())
+                .build();
     }
 
     /**
      * Sets the entity and edge groups to only contain groups
      * that are in the given {@link Set}.
      *
-     * @param groups
-     *            The groups to be included.
+     * @param groups The groups to be included.
      */
     public void setGroupTypes(final Set<String> groups) {
         entityGroups.clear();

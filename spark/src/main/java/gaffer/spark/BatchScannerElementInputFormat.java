@@ -16,9 +16,18 @@
 
 package gaffer.spark;
 
+import gaffer.accumulostore.key.AccumuloElementConverter;
+import gaffer.accumulostore.key.AccumuloKeyPackage;
+import gaffer.accumulostore.key.exception.AccumuloElementConversionException;
+import gaffer.data.element.Element;
+import gaffer.data.element.Properties;
+import gaffer.data.elementdefinition.exception.SchemaException;
+import gaffer.exception.SerialisationException;
+import gaffer.serialisation.simple.StringSerialiser;
+import gaffer.store.StoreException;
+import gaffer.store.schema.Schema;
 import geotrellis.spark.io.accumulo.BatchAccumuloInputFormat;
 import geotrellis.spark.io.accumulo.MultiRangeInputSplit;
-
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.IteratorSetting;
@@ -35,19 +44,7 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-
-import gaffer.accumulostore.key.AccumuloElementConverter;
-import gaffer.accumulostore.key.AccumuloKeyPackage;
-import gaffer.accumulostore.key.exception.AccumuloElementConversionException;
-import gaffer.data.element.Element;
-import gaffer.data.element.Properties;
-import gaffer.data.elementdefinition.exception.SchemaException;
-import gaffer.exception.SerialisationException;
-import gaffer.serialisation.simple.StringSerialiser;
-import gaffer.store.StoreException;
-import gaffer.store.schema.Schema;
 import scala.collection.JavaConverters;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
@@ -62,7 +59,6 @@ import java.util.Map;
  * values.
  */
 public class BatchScannerElementInputFormat extends InputFormatBase<Element, Properties> {
-
     public static final String KEY_PACKAGE = "KEY_PACKAGE";
     public static final String SCHEMA = "SCHEMA";
 
@@ -72,11 +68,12 @@ public class BatchScannerElementInputFormat extends InputFormatBase<Element, Pro
     }
 
     @Override
-    public RecordReader<Element, Properties> createRecordReader(final InputSplit split,
-            final TaskAttemptContext context) throws IOException, InterruptedException {
+    public RecordReader<Element, Properties> createRecordReader(
+            final InputSplit split, final TaskAttemptContext context)
+            throws IOException, InterruptedException {
         log.setLevel(getLogLevel(context));
-        String keyPackageClass = context.getConfiguration().get(KEY_PACKAGE);
-        String schema = context.getConfiguration().get(SCHEMA);
+        final String keyPackageClass = context.getConfiguration().get(KEY_PACKAGE);
+        final String schema = context.getConfiguration().get(SCHEMA);
         try {
             return new BatchScannerRecordReader(keyPackageClass, schema);
         } catch (StoreException | SchemaException | SerialisationException e) {
@@ -92,12 +89,13 @@ public class BatchScannerElementInputFormat extends InputFormatBase<Element, Pro
         private Element currentK;
         private Properties currentV;
         private MultiRangeInputSplit inputSplit;
-        private AccumuloElementConverter converter;
-        private StringSerialiser serialiser = new StringSerialiser();
+        private final AccumuloElementConverter converter;
+        private final StringSerialiser serialiser = new StringSerialiser();
 
-        BatchScannerRecordReader(final String keyPackageClass, final String schema) throws StoreException, SchemaException, SerialisationException {
+        BatchScannerRecordReader(final String keyPackageClass, final String schema)
+                throws StoreException, SchemaException, SerialisationException {
             super();
-            AccumuloKeyPackage keyPackage;
+            final AccumuloKeyPackage keyPackage;
             try {
                 keyPackage = Class.forName(keyPackageClass).asSubclass(AccumuloKeyPackage.class).newInstance();
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
@@ -113,9 +111,9 @@ public class BatchScannerElementInputFormat extends InputFormatBase<Element, Pro
             if (split instanceof MultiRangeInputSplit) {
                 inputSplit = (MultiRangeInputSplit) split;
             }
-            Connector connector = inputSplit.connector();
+            final Connector connector = inputSplit.connector();
             try {
-                Authorizations auths = InputConfigurator.getScanAuthorizations(AccumuloInputFormat.class,
+                final Authorizations auths = InputConfigurator.getScanAuthorizations(AccumuloInputFormat.class,
                         context.getConfiguration());
                 log.info("Initialising BatchScanner on table " + inputSplit.table() + " with auths " + auths);
                 scanner = connector.createBatchScanner(inputSplit.table(), auths, 1);
@@ -123,13 +121,13 @@ public class BatchScannerElementInputFormat extends InputFormatBase<Element, Pro
                 throw new IOException("Exception whilst initializing batch scanner: " + e);
             }
             scanner.setRanges(JavaConverters.asJavaCollectionConverter(inputSplit.ranges()).asJavaCollection());
-            List<IteratorSetting> iteratorSettings = JavaConverters.asJavaListConverter(inputSplit.iterators())
+            final List<IteratorSetting> iteratorSettings = JavaConverters.asJavaListConverter(inputSplit.iterators())
                     .asJava();
             for (IteratorSetting is : iteratorSettings) {
                 log.debug("Adding scan iterator " + is);
                 scanner.addScanIterator(is);
             }
-            Collection<Pair<Text, Text>> fetchedColumns = JavaConverters
+            final Collection<Pair<Text, Text>> fetchedColumns = JavaConverters
                     .asJavaCollectionConverter(inputSplit.fetchedColumns()).asJavaCollection();
             for (Pair<Text, Text> pair : fetchedColumns) {
                 if (pair.getSecond() != null) {
@@ -144,7 +142,7 @@ public class BatchScannerElementInputFormat extends InputFormatBase<Element, Pro
         @Override
         public boolean nextKeyValue() throws IOException, InterruptedException {
             if (scannerIterator.hasNext()) {
-                Map.Entry<Key, Value> entry = scannerIterator.next();
+                final Map.Entry<Key, Value> entry = scannerIterator.next();
                 try {
                     currentK = converter.getFullElement(entry.getKey(), entry.getValue());
                     currentV = currentK.getProperties();

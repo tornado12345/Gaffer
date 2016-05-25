@@ -16,39 +16,36 @@
 
 package gaffer.spark;
 
+import gaffer.accumulostore.AccumuloStore;
+import gaffer.accumulostore.key.exception.RangeFactoryException;
+import gaffer.accumulostore.utils.Pair;
+import gaffer.data.element.Element;
+import gaffer.data.element.Properties;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import scala.Tuple2;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.JavaPairRDD;
-
-import gaffer.accumulostore.utils.Pair;
-import gaffer.accumulostore.AccumuloStore;
-import gaffer.accumulostore.key.exception.RangeFactoryException;
-import gaffer.data.element.Element;
-import gaffer.data.element.Properties;
-import scala.Tuple2;
-
 public class GafferTable {
-
-    protected JavaSparkContext sc;
-    protected GraphConfig config;
-    protected AccumuloStore store;
+    protected final JavaSparkContext sc;
+    protected final GraphConfig config;
+    protected final AccumuloStore store;
 
     /**
      * Represents a Gaffer table in Spark. Can be queried to return
      * {@link JavaPairRDD}s of {@link Element}s and their {@link Properties}.
+     *
      * @param store The {@link AccumuloStore} to be queried.
-     * @param sc Spark's {@link JavaSparkContext}.
+     * @param sc    Spark's {@link JavaSparkContext}.
      */
     protected GafferTable(final AccumuloStore store, final JavaSparkContext sc) {
         this.store = store;
         this.sc = sc;
         config = new GraphConfig(this.store);
-
     }
 
     protected JavaPairRDD<Element, Properties> query(final Configuration conf, final boolean useBatchInputFormat) {
@@ -66,10 +63,10 @@ public class GafferTable {
      * members.
      *
      * @return A {@link JavaPairRDD} of {@link Element}, {@link Properties}
-     *         pairs.
+     * pairs.
      */
     public JavaPairRDD<Element, Properties> query() {
-        Configuration conf = new Configuration();
+        final Configuration conf = new Configuration();
         config.setConfiguration(conf);
         return query(conf, false);
     }
@@ -77,18 +74,16 @@ public class GafferTable {
     /**
      * Creates a {@link JavaPairRDD} by querying the table for a
      * {@link Collection} of {@link Object} vertices.
-     *
      * Note that edges may be returned twice if both ends are in the
      * {@link Collection} queried for.
      *
-     * @param vertices
-     *            The {@link Object} vertices to be queried for.
+     * @param vertices The {@link Object} vertices to be queried for.
      * @return A {@link JavaPairRDD} of {@link Element}, {@link Properties}
-     *         pairs.
+     * pairs.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
     public JavaPairRDD<Element, Properties> query(final Collection<Object> vertices) throws RangeFactoryException {
-        Configuration conf = new Configuration();
+        final Configuration conf = new Configuration();
         config.setConfiguration(conf, vertices);
         return query(conf, true);
     }
@@ -97,10 +92,9 @@ public class GafferTable {
      * Creates a {@link JavaPairRDD} by querying the table for a single
      * {@link Object} vertex.
      *
-     * @param vertex
-     *            The {@link Object} to be queried for.
+     * @param vertex The {@link Object} to be queried for.
      * @return A {@link JavaPairRDD} of {@link Element}, {@link Properties}
-     *         pairs.
+     * pairs.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
     public JavaPairRDD<Element, Properties> query(final Object vertex) throws RangeFactoryException {
@@ -111,14 +105,13 @@ public class GafferTable {
      * Creates a {@link JavaPairRDD} by querying the table for a
      * {@link Collection} of ranges from {@link Pair}s of vertices.
      *
-     * @param ranges
-     *            The {@link Pair}s of vertices to be queried for.
+     * @param ranges The {@link Pair}s of vertices to be queried for.
      * @return A {@link JavaPairRDD} of {@link Element}, {@link Properties}
-     *         pairs.
+     * pairs.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
     public JavaPairRDD<Element, Properties> rangeQuery(final Collection<Pair<Object>> ranges) throws RangeFactoryException {
-        Configuration conf = new Configuration();
+        final Configuration conf = new Configuration();
         config.setConfigurationFromRanges(conf, ranges);
         return query(conf, true);
     }
@@ -127,10 +120,9 @@ public class GafferTable {
      * Creates a {@link JavaPairRDD} by querying the table for a range from a
      * {@link Pair} of vertices.
      *
-     * @param range
-     *            The {@link Pair} of vertices to be queried for.
+     * @param range The {@link Pair} of vertices to be queried for.
      * @return a {@link JavaPairRDD} of {@link Element}, {@link Properties}
-     *         pairs.
+     * pairs.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
     public JavaPairRDD<Element, Properties> rangeQuery(final Pair<Object> range) throws RangeFactoryException {
@@ -140,19 +132,17 @@ public class GafferTable {
     /**
      * Creates a {@link JavaPairRDD} by querying the table for an
      * {@link Collection} of pairs of {@link Object} vertices.
-     *
      * Only those edges between the two entities will be returned.
      *
-     * @param pairs
-     *            The pairs of {@link Object} vertices to be queried for.
+     * @param pairs The pairs of {@link Object} vertices to be queried for.
      * @return a {@link JavaPairRDD} of {@link Element}, {@link Properties}
-     *         pairs.
+     * pairs.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
     public JavaPairRDD<Element, Properties> pairQuery(final Collection<Tuple2<Object, Object>> pairs) throws RangeFactoryException {
-        Configuration conf = new Configuration();
+        final Configuration conf = new Configuration();
 
-        Collection<Pair<Object>> coll = new HashSet<>();
+        final Collection<Pair<Object>> coll = new HashSet<>();
         for (Tuple2<Object, Object> t : pairs) {
             coll.add(new Pair<>(t._1(), t._2()));
         }
@@ -163,13 +153,11 @@ public class GafferTable {
     /**
      * Creates a {@link JavaPairRDD} by querying the table for a pair of
      * {@link Object} vertices.
-     *
      * Only those edges between the two entities will be returned.
      *
-     * @param pair
-     *            The pair of {@link Object} vertices to be queried for.
+     * @param pair The pair of {@link Object} vertices to be queried for.
      * @return a {@link JavaPairRDD} of {@link Element}, {@link Properties}
-     *         pairs.
+     * pairs.
      * @throws RangeFactoryException When an error occurs creating a range.
      */
     public JavaPairRDD<Element, Properties> pairQuery(final Tuple2<Object, Object> pair) throws RangeFactoryException {
@@ -183,7 +171,7 @@ public class GafferTable {
      * @return The new {@link GafferTable}.
      */
     public GafferTable onlyEntities() {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.setReturnEntitiesOnly();
         return gt;
     }
@@ -195,7 +183,7 @@ public class GafferTable {
      * @return The new {@link GafferTable}.
      */
     public GafferTable onlyEdges() {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.setReturnEdgesOnly();
         return gt;
     }
@@ -207,7 +195,7 @@ public class GafferTable {
      * @return The new {@link GafferTable}.
      */
     public GafferTable entitiesAndEdges() {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.setReturnEntitiesAndEdges();
         return gt;
     }
@@ -218,16 +206,13 @@ public class GafferTable {
      * or after the first value and at or before the second value. The values
      * relate to a given property {@link String}.
      *
-     * @param prop
-     *            The property relating to the range of values.
-     * @param start
-     *            The start value of the range to be queried.
-     * @param end
-     *            The end value of the range to be queried.
+     * @param prop  The property relating to the range of values.
+     * @param start The start value of the range to be queried.
+     * @param end   The end value of the range to be queried.
      * @return The new {@link GafferTable}.
      */
     public GafferTable between(final String prop, final Comparable start, final Comparable end) {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.setRange(prop, start, end);
         return gt;
     }
@@ -238,14 +223,12 @@ public class GafferTable {
      * or before the value supplied. The value relates to a given property
      * {@link String}.
      *
-     * @param prop
-     *            The property relating to the range of values.
-     * @param end
-     *            The end value of the range to be queried.
+     * @param prop The property relating to the range of values.
+     * @param end  The end value of the range to be queried.
      * @return The new {@link GafferTable}.
      */
     public GafferTable before(final String prop, final Comparable end) {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.setBefore(prop, end);
         return gt;
     }
@@ -256,14 +239,12 @@ public class GafferTable {
      * or after the value supplied. The value relates to a given property
      * {@link String}.
      *
-     * @param prop
-     *            The property relating to the range of values.
-     * @param start
-     *            The start value of the range to be queried.
+     * @param prop  The property relating to the range of values.
+     * @param start The start value of the range to be queried.
      * @return The new {@link GafferTable}.
      */
     public GafferTable after(final String prop, final Comparable start) {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.setAfter(prop, start);
         return gt;
     }
@@ -271,14 +252,13 @@ public class GafferTable {
     /**
      * Creates a new {@link GafferTable} which rolls up the {@link Element}s it
      * returns using the summarise function.
-     *
      * Note that this is the default behaviour for a newly created
      * {@link GafferTable}.
      *
      * @return The new {@link GafferTable}.
      */
     public GafferTable withRollup() {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.summarise(true);
         return gt;
     }
@@ -290,7 +270,7 @@ public class GafferTable {
      * @return The new {@link GafferTable}.
      */
     public GafferTable withoutRollup() {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.summarise(false);
         return gt;
     }
@@ -299,8 +279,7 @@ public class GafferTable {
      * Creates a new {@link GafferTable} containing those {@link Element}s from
      * the base table whose group is of the group supplied.
      *
-     * @param group
-     *            The group to be included.
+     * @param group The group to be included.
      * @return The new {@link GafferTable}.
      */
     public GafferTable onlyGroups(final String group) {
@@ -311,12 +290,11 @@ public class GafferTable {
      * Creates a new {@link GafferTable} containing those {@link Element}s from
      * the base table whose groups are in the given {@link Set}.
      *
-     * @param groups
-     *            The groups to be included.
+     * @param groups The groups to be included.
      * @return The new {@link GafferTable}.
      */
     public GafferTable onlyGroups(final Set<String> groups) {
-        GafferTable gt = this.cloneTable();
+        final GafferTable gt = this.cloneTable();
         gt.config.setGroupTypes(groups);
         return gt;
     }

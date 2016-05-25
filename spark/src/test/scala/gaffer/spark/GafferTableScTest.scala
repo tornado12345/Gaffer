@@ -18,17 +18,12 @@ package gaffer.spark
 
 import gaffer.accumulostore.AccumuloStore
 import gaffer.accumulostore.utils.Pair
-import gaffer.data.element.{Edge, Element, Entity, Properties}
+import gaffer.data.element.{Edge, Element, Entity}
 import gaffer.store.Store
-
-import org.apache.accumulo.core.client.{Connector, ZooKeeperInstance}
-import org.apache.accumulo.core.client.security.tokens.{AuthenticationToken, PasswordToken}
-import org.apache.accumulo.core.security.{Authorizations, SystemPermission}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest._
-
 import org.junit.runner.RunWith
+import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
 import scala.collection.JavaConversions._
@@ -41,14 +36,14 @@ class GafferTableSCTest extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   var sc: SparkContext = _
   var table: GafferTableSC = _
-  var store: Store = _ 
+  var store: Store = _
   var data: GafferTableData = _
 
   override def beforeAll(configMap: ConfigMap): Unit = {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
     data = new GafferTableData()
-    store = data.getStore()
+    store = data.getStore
     sc = new SparkContext(new SparkConf().setAppName("gafferscalatest").setMaster("local").set("spark.serializer", "org.apache.spark.serializer.KryoSerializer").set("spark.kryo.registrator", "gaffer.spark.GafferRegistrator"))
     table = new GafferTableSC(store.asInstanceOf[AccumuloStore], sc)
   }
@@ -164,7 +159,7 @@ class GafferTableSCTest extends FlatSpec with Matchers with BeforeAndAfterAll {
     val rangeEnd = 1408000000000L
     val inRangeResults = data.expectedOutput.toSet filter (p => (p._2.containsKey(prop)) &&
       (p._2.get(prop).asInstanceOf[Long] > rangeStart) &&
-        (p._2.get(prop).asInstanceOf[Long] < rangeEnd)
+      (p._2.get(prop).asInstanceOf[Long] < rangeEnd)
       )
 
     table.between(prop, rangeStart, rangeEnd).query.collect.toSet should equal(inRangeResults)
@@ -173,8 +168,8 @@ class GafferTableSCTest extends FlatSpec with Matchers with BeforeAndAfterAll {
   it should "return only those elements after a given date" in {
     val prop = "startTime"
     val rangeStart = 1402000000000L
-    val afterDateResults = data.expectedOutput.toSet filter (p => p._2.containsKey(prop) && 
-        p._2.get(prop).asInstanceOf[Long] > rangeStart)
+    val afterDateResults = data.expectedOutput.toSet filter (p => p._2.containsKey(prop) &&
+      p._2.get(prop).asInstanceOf[Long] > rangeStart)
 
     table.after(prop, rangeStart).query.collect.toSet should equal(afterDateResults)
   }
@@ -182,9 +177,9 @@ class GafferTableSCTest extends FlatSpec with Matchers with BeforeAndAfterAll {
   it should "return only those elements before a given date" in {
     val prop = "startTime"
     val rangeEnd = 1408000000000L
-    val untilDateResults = data.expectedOutput.toSet filter (p => p._2.containsKey(prop) && 
-        p._2.get(prop).asInstanceOf[Long] < rangeEnd) 
-    
+    val untilDateResults = data.expectedOutput.toSet filter (p => p._2.containsKey(prop) &&
+      p._2.get(prop).asInstanceOf[Long] < rangeEnd)
+
     table.before(prop, rangeEnd).query.collect.toSet should equal(untilDateResults)
   }
 }
