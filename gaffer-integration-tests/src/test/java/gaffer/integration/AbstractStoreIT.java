@@ -103,7 +103,7 @@ public abstract class AbstractStoreIT {
 
     @Rule
     public TestName name = new TestName();
-    private static Map<? extends Class<? extends AbstractStoreIT>, String> skippedTests;
+    private static Map<? extends Class<? extends AbstractStoreIT>, String> skippedTests = new HashMap<>();
 
 
     public static void setStoreProperties(final StoreProperties storeProperties) {

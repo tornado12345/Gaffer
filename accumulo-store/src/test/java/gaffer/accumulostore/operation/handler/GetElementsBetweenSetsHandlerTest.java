@@ -18,7 +18,6 @@ package gaffer.accumulostore.operation.handler;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.Iterables;
@@ -39,16 +38,14 @@ import gaffer.operation.OperationException;
 import gaffer.operation.data.EntitySeed;
 import gaffer.operation.impl.add.AddElements;
 import gaffer.store.StoreException;
+import gaffer.user.User;
 import org.hamcrest.core.IsCollectionContaining;
 import org.junit.After;
 import org.junit.Before;
-import gaffer.user.User;
 import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
 public class GetElementsBetweenSetsHandlerTest {
@@ -73,6 +70,10 @@ public class GetElementsBetweenSetsHandlerTest {
     public void setup() throws StoreException, IOException {
         expectedEdge1.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 1);
         expectedEdge1.putProperty(AccumuloPropertyNames.COUNT, 23);
+        expectedEdge1.putProperty(AccumuloPropertyNames.PROP_1, 0);
+        expectedEdge1.putProperty(AccumuloPropertyNames.PROP_2, 0);
+        expectedEdge1.putProperty(AccumuloPropertyNames.PROP_3, 0);
+        expectedEdge1.putProperty(AccumuloPropertyNames.PROP_4, 0);
 
         expectedEdge2.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 2);
         expectedEdge2.putProperty(AccumuloPropertyNames.COUNT, 23);
@@ -175,7 +176,7 @@ public class GetElementsBetweenSetsHandlerTest {
     @Test
     public void shouldReturnOnlyEntitiesWhenOptionSetByteEntityStore() throws OperationException {
         shouldReturnOnlyEntitiesWhenOptionSet(byteEntityStore);
-     }
+    }
 
     @Test
     public void shouldReturnOnlyEntitiesWhenOptionSetGaffer1Store() throws OperationException {
@@ -251,6 +252,10 @@ public class GetElementsBetweenSetsHandlerTest {
             final Edge edge = new Edge(TestGroups.EDGE, "A0", "A" + i, true);
             edge.putProperty(AccumuloPropertyNames.COUNT, 23);
             edge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 1);
+            edge.putProperty(AccumuloPropertyNames.PROP_1, 0);
+            edge.putProperty(AccumuloPropertyNames.PROP_2, 0);
+            edge.putProperty(AccumuloPropertyNames.PROP_3, 0);
+            edge.putProperty(AccumuloPropertyNames.PROP_4, 0);
             data.add(edge);
 
             final Edge edge2 = new Edge(TestGroups.EDGE, "A0", "A" + i, true);

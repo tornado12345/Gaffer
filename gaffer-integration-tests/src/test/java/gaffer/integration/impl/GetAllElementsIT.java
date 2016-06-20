@@ -73,6 +73,27 @@ public class GetAllElementsIT extends AbstractStoreIT {
 
     @TraitRequirement(StoreTrait.FILTERING)
     @Test
+    public void shouldGetAllElementsFilteredOnGroup() throws Exception {
+        final GetAllElements<Element> op = new GetAllElements.Builder<>()
+                .populateProperties(true)
+                .view(new View.Builder()
+                        .entity(TestGroups.ENTITY)
+                        .build())
+                .build();
+
+        // When
+        final Iterable<? extends Element> results = graph.execute(op, getUser());
+
+        // Then
+        final List<Element> resultList = Lists.newArrayList(results);
+        assertEquals(getEntities().size(), resultList.size());
+        for (Element element : resultList) {
+            assertEquals(TestGroups.ENTITY, element.getGroup());
+        }
+    }
+
+    @TraitRequirement(StoreTrait.FILTERING)
+    @Test
     public void shouldGetAllFilteredElements() throws Exception {
         final GetAllElements<Element> op = new GetAllElements.Builder<>()
                 .populateProperties(true)

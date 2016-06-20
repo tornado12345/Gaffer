@@ -27,7 +27,6 @@ import gaffer.store.schema.Schema;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.mapreduce.Reducer;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
@@ -86,10 +85,11 @@ public class AccumuloKeyValueReducer extends Reducer<Key, Value, Key, Value> {
     private Value reduceMultiValue(final Key key, final Iterator<Value> iter, final Value firstValue) {
         final String group;
         try {
-            group = new String(key.getColumnFamilyData().getBackingArray(), CommonConstants.UTF_8);
-        } catch (final UnsupportedEncodingException e) {
+            group = elementConverter.getGroupFromColumnFamily(key.getColumnFamilyData().getBackingArray());
+        } catch (final AccumuloElementConversionException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+
         ElementAggregator aggregator;
         Properties firstPropertySet;
         try {

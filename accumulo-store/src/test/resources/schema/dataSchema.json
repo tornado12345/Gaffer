@@ -4,11 +4,14 @@
       "vertex": "id.object",
       "properties": {
         "columnQualifier": "colQualProperty",
+        "columnQualifier2": "colQualProperty2",
         "property1": "simpleProperty",
         "property2": "simpleProperty",
         "property3": "simpleProperty",
         "property4": "simpleProperty",
-        "count": "simpleProperty"
+        "count": "simpleProperty",
+        "columnFamily": "columnFamilyProperty",
+        "columnFamily2": "columnFamilyProperty2"
       }
     }
   },
@@ -19,11 +22,14 @@
       "directed": "directed.either",
       "properties": {
         "columnQualifier": "colQualProperty",
+        "columnQualifier2": "colQualProperty2",
         "property1": "simpleProperty",
         "property2": "simpleProperty",
         "property3": "simpleProperty",
         "property4": "simpleProperty",
-        "count": "simpleProperty"
+        "count": "simpleProperty",
+        "columnFamily": "columnFamilyProperty",
+        "columnFamily2": "columnFamilyProperty2"
       }
     }
   }

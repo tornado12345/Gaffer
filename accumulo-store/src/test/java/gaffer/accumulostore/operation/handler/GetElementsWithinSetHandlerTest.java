@@ -16,6 +16,10 @@
 
 package gaffer.accumulostore.operation.handler;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.Iterables;
 import gaffer.accumulostore.AccumuloStore;
 import gaffer.accumulostore.MockAccumuloStoreForTest;
@@ -23,7 +27,6 @@ import gaffer.accumulostore.key.core.impl.byteEntity.ByteEntityKeyPackage;
 import gaffer.accumulostore.key.core.impl.classic.ClassicKeyPackage;
 import gaffer.accumulostore.operation.impl.GetElementsWithinSet;
 import gaffer.accumulostore.utils.AccumuloPropertyNames;
-import gaffer.accumulostore.utils.AccumuloStoreConstants;
 import gaffer.accumulostore.utils.TableUtils;
 import gaffer.commonutil.TestGroups;
 import gaffer.data.element.Edge;
@@ -48,8 +51,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-
-import static org.junit.Assert.*;
 
 public class GetElementsWithinSetHandlerTest {
 
@@ -76,32 +77,26 @@ public class GetElementsWithinSetHandlerTest {
         expectedEdge1.putProperty(AccumuloPropertyNames.PROP_2, 0);
         expectedEdge1.putProperty(AccumuloPropertyNames.PROP_3, 0);
         expectedEdge1.putProperty(AccumuloPropertyNames.PROP_4, 0);
-//        expectedEdge1.putProperty(AccumuloPropertyNames.TIMESTAMP, TIMESTAMP);
         expectedEdge2.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 2);
         expectedEdge2.putProperty(AccumuloPropertyNames.COUNT, 23);
         expectedEdge2.putProperty(AccumuloPropertyNames.PROP_1, 0);
         expectedEdge2.putProperty(AccumuloPropertyNames.PROP_2, 0);
         expectedEdge2.putProperty(AccumuloPropertyNames.PROP_3, 0);
         expectedEdge2.putProperty(AccumuloPropertyNames.PROP_4, 0);
-//        expectedEdge2.putProperty(AccumuloPropertyNames.TIMESTAMP, TIMESTAMP);
         expectedEdge3.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 3);
         expectedEdge3.putProperty(AccumuloPropertyNames.COUNT, 23);
         expectedEdge3.putProperty(AccumuloPropertyNames.PROP_1, 0);
         expectedEdge3.putProperty(AccumuloPropertyNames.PROP_2, 0);
         expectedEdge3.putProperty(AccumuloPropertyNames.PROP_3, 0);
         expectedEdge3.putProperty(AccumuloPropertyNames.PROP_4, 0);
-//        expectedEdge3.putProperty(AccumuloPropertyNames.TIMESTAMP, TIMESTAMP);
         expectedEntity1.putProperty(AccumuloPropertyNames.COUNT, 10000);
-//        expectedEntity1.putProperty(AccumuloPropertyNames.TIMESTAMP, TIMESTAMP);
         expectedEntity2.putProperty(AccumuloPropertyNames.COUNT, 23);
-//        expectedEntity2.putProperty(AccumuloPropertyNames.TIMESTAMP, TIMESTAMP);
         expectedSummarisedEdge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 6);
         expectedSummarisedEdge.putProperty(AccumuloPropertyNames.COUNT, 23 * 3);
         expectedSummarisedEdge.putProperty(AccumuloPropertyNames.PROP_1, 0);
         expectedSummarisedEdge.putProperty(AccumuloPropertyNames.PROP_2, 0);
         expectedSummarisedEdge.putProperty(AccumuloPropertyNames.PROP_3, 0);
         expectedSummarisedEdge.putProperty(AccumuloPropertyNames.PROP_4, 0);
-//        expectedSummarisedEdge.putProperty(AccumuloPropertyNames.TIMESTAMP, TIMESTAMP);
 
         byteEntityStore = new MockAccumuloStoreForTest(ByteEntityKeyPackage.class);
         gaffer1KeyStore = new MockAccumuloStoreForTest(ClassicKeyPackage.class);

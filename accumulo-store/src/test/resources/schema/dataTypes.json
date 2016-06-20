@@ -11,6 +11,15 @@
     },
     "colQualProperty": {
       "class": "java.lang.Integer"
+    },
+    "colQualProperty2": {
+      "class": "java.lang.Integer"
+    },
+    "columnFamilyProperty": {
+      "class": "java.lang.String"
+    },
+    "columnFamilyProperty2": {
+      "class": "java.lang.String"
     }
   }
 }

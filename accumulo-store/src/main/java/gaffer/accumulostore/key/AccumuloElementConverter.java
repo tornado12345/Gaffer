@@ -189,11 +189,12 @@ public interface AccumuloElementConverter {
     /**
      * Creates a byte array representing the group.
      *
-     * @param group the element group
+     * @param group      the element group
+     * @param properties the element properties
      * @return A byte array representing the group
      * @throws AccumuloElementConversionException If conversion fails
      */
-    byte[] buildColumnFamily(final String group) throws AccumuloElementConversionException;
+    byte[] buildColumnFamily(final String group, final Properties properties) throws AccumuloElementConversionException;
 
     /**
      * Returns the element class from the given bytes.
@@ -203,6 +204,8 @@ public interface AccumuloElementConverter {
      * @throws AccumuloElementConversionException If conversion fails
      */
     String getGroupFromColumnFamily(final byte[] columnFamily) throws AccumuloElementConversionException;
+
+    Properties getPropertiesFromColumnFamily(final String group, final byte[] keyPortion) throws AccumuloElementConversionException;
 
     /**
      * Creates a byte array representing a set of

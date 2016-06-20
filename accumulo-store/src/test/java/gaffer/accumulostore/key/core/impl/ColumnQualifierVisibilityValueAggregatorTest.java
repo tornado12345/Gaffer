@@ -16,6 +16,7 @@
 package gaffer.accumulostore.key.core.impl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import gaffer.accumulostore.MockAccumuloStore;
@@ -90,15 +91,6 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             // (this method creates the table, removes the versioning iterator, and adds the SetOfStatisticsCombiner iterator).
             TableUtils.createTable(store);
 
-            final Properties properties1 = new Properties();
-            properties1.put(AccumuloPropertyNames.COUNT, 1);
-
-            final Properties properties2 = new Properties();
-            properties2.put(AccumuloPropertyNames.COUNT, 2);
-
-            final Properties properties3 = new Properties();
-            properties3.put(AccumuloPropertyNames.COUNT, 10);
-
             // Create edge
             final Edge edge = new Edge(TestGroups.EDGE);
             edge.setSource("1");
@@ -107,9 +99,9 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             edge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 8);
             edge.putProperty(AccumuloPropertyNames.PROP_1, 0);
             edge.putProperty(AccumuloPropertyNames.PROP_2, 0);
-            edge.putProperty(AccumuloPropertyNames.PROP_3, 3);
+            edge.putProperty(AccumuloPropertyNames.PROP_3, 0);
             edge.putProperty(AccumuloPropertyNames.PROP_4, 0);
-            edge.putProperty(AccumuloPropertyNames.COUNT, 15);
+            edge.putProperty(AccumuloPropertyNames.COUNT, 1);
 
             //THIS EDGE WILL BE REDUCED MEANING ITS CQ (columnQualifier) will only occur once because its key is equal.
             final Edge edge2 = new Edge(TestGroups.EDGE);
@@ -121,6 +113,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             edge2.putProperty(AccumuloPropertyNames.PROP_2, 0);
             edge2.putProperty(AccumuloPropertyNames.PROP_3, 0);
             edge2.putProperty(AccumuloPropertyNames.PROP_4, 0);
+            edge2.putProperty(AccumuloPropertyNames.COUNT, 2);
 
             final Edge edge3 = new Edge(TestGroups.EDGE);
             edge3.setSource("1");
@@ -131,7 +124,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             edge3.putProperty(AccumuloPropertyNames.PROP_2, 0);
             edge3.putProperty(AccumuloPropertyNames.PROP_3, 0);
             edge3.putProperty(AccumuloPropertyNames.PROP_4, 0);
-
+            edge3.putProperty(AccumuloPropertyNames.COUNT, 10);
 
             // Accumulo key
             final Key key = elementConverter.getKeysFromEdge(edge).getFirst();
@@ -139,9 +132,9 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             final Key key3 = elementConverter.getKeysFromEdge(edge3).getFirst();
 
             // Accumulo values
-            final Value value1 = elementConverter.getValueFromProperties(properties1, TestGroups.EDGE);
-            final Value value2 = elementConverter.getValueFromProperties(properties2, TestGroups.EDGE);
-            final Value value3 = elementConverter.getValueFromProperties(properties3, TestGroups.EDGE);
+            final Value value1 = elementConverter.getValueFromProperties(edge.getProperties(), TestGroups.EDGE);
+            final Value value2 = elementConverter.getValueFromProperties(edge2.getProperties(), TestGroups.EDGE);
+            final Value value3 = elementConverter.getValueFromProperties(edge3.getProperties(), TestGroups.EDGE);
 
             // Create mutation
             final Mutation m1 = new Mutation(key.getRow());
@@ -184,7 +177,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
 
             final Edge expectedEdge = new Edge(TestGroups.EDGE);
             expectedEdge.setSource("1");
-            expectedEdge .setDestination("2");
+            expectedEdge.setDestination("2");
             expectedEdge.setDirected(true);
             expectedEdge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, 9);
             expectedEdge.putProperty(AccumuloPropertyNames.PROP_1, 0);
@@ -193,7 +186,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             expectedEdge.putProperty(AccumuloPropertyNames.PROP_4, 0);
             expectedEdge.putProperty(AccumuloPropertyNames.COUNT, 15);
 
-            assertEquals(readEdge, expectedEdge);
+            assertEquals(expectedEdge, readEdge);
             assertEquals(9, readEdge.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER));
             assertEquals(15, readEdge.getProperty(AccumuloPropertyNames.COUNT));
             // Check no more entries
@@ -266,7 +259,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             final Iterator<Entry<Key, Value>> it = scanner.iterator();
             final Entry<Key, Value> entry = it.next();
             final Element readEdge = elementConverter.getFullElement(entry.getKey(), entry.getValue());
-            assertEquals(readEdge, edge);
+            assertEquals(edge, readEdge);
             assertEquals(8, readEdge.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER));
             assertEquals(1, readEdge.getProperty(AccumuloPropertyNames.COUNT));
             // Check no more entries
@@ -306,7 +299,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             edge.putProperty(AccumuloPropertyNames.PROP_2, 0);
             edge.putProperty(AccumuloPropertyNames.PROP_3, 0);
             edge.putProperty(AccumuloPropertyNames.PROP_4, 0);
-            edge.putProperty(AccumuloPropertyNames.COUNT, 15);
+            edge.putProperty(AccumuloPropertyNames.COUNT, 1);
 
             //THIS EDGE WILL BE REDUCED MEANING ITS CQ (columnQualifier) will only occur once because its key is equal.
             final Edge edge2 = new Edge(TestGroups.EDGE);
@@ -317,6 +310,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             edge2.putProperty(AccumuloPropertyNames.PROP_2, 0);
             edge2.putProperty(AccumuloPropertyNames.PROP_3, 0);
             edge2.putProperty(AccumuloPropertyNames.PROP_4, 0);
+            edge2.putProperty(AccumuloPropertyNames.COUNT, 2);
 
             final Edge edge3 = new Edge(TestGroups.EDGE);
             edge3.setSource("1");
@@ -326,15 +320,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             edge3.putProperty(AccumuloPropertyNames.PROP_2, 0);
             edge3.putProperty(AccumuloPropertyNames.PROP_3, 0);
             edge3.putProperty(AccumuloPropertyNames.PROP_4, 0);
-
-            final Properties properties1 = new Properties();
-            properties1.put(AccumuloPropertyNames.COUNT, 1);
-
-            final Properties properties2 = new Properties();
-            properties2.put(AccumuloPropertyNames.COUNT, 2);
-
-            final Properties properties3 = new Properties();
-            properties3.put(AccumuloPropertyNames.COUNT, 10);
+            edge3.putProperty(AccumuloPropertyNames.COUNT, 10);
 
             // Accumulo key
             final Key key = elementConverter.getKeysFromEdge(edge).getFirst();
@@ -342,9 +328,9 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             final Key key3 = elementConverter.getKeysFromEdge(edge3).getFirst();
 
             // Accumulo values
-            final Value value1 = elementConverter.getValueFromProperties(properties1, TestGroups.EDGE);
-            final Value value2 = elementConverter.getValueFromProperties(properties2, TestGroups.EDGE);
-            final Value value3 = elementConverter.getValueFromProperties(properties3, TestGroups.EDGE);
+            final Value value1 = elementConverter.getValueFromProperties(edge.getProperties(), TestGroups.EDGE);
+            final Value value2 = elementConverter.getValueFromProperties(edge2.getProperties(), TestGroups.EDGE);
+            final Value value3 = elementConverter.getValueFromProperties(edge3.getProperties(), TestGroups.EDGE);
 
             // Create mutation
             final Mutation m1 = new Mutation(key.getRow());
@@ -384,7 +370,7 @@ public class ColumnQualifierVisibilityValueAggregatorTest {
             final Iterator<Entry<Key, Value>> it = scanner.iterator();
             final Entry<Key, Value> entry = it.next();
             final Element readEdge = elementConverter.getFullElement(entry.getKey(), entry.getValue());
-            assertEquals(readEdge, edge);
+            assertTrue(edge.shallowEquals(readEdge));
             assertEquals(8, readEdge.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER));
             assertEquals(15, readEdge.getProperty(AccumuloPropertyNames.COUNT));
             // Check no more entries

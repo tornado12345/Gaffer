@@ -116,6 +116,31 @@ public class ValidatorFilterTest {
     }
 
     @Test
+    public void shouldNotAcceptElementWhenInvalidGroup() throws Exception {
+        // Given
+        final ValidatorFilter filter = new ValidatorFilter();
+
+        final Map<String, String> options = new HashMap<>();
+        options.put(AccumuloStoreConstants.SCHEMA, getSchemaJson());
+        options.put(AccumuloStoreConstants.ACCUMULO_ELEMENT_CONVERTER_CLASS,
+                ByteEntityAccumuloElementConverter.class.getName());
+
+        filter.validateOptions(options);
+
+        final ByteEntityAccumuloElementConverter converter = new ByteEntityAccumuloElementConverter(getSchemaWithEdge2());
+
+        final Element element = new Edge(TestGroups.EDGE_2, "source", "dest", true);
+        final Pair<Key> key = converter.getKeysFromElement(element);
+        final Value value = converter.getValueFromElement(element);
+
+        // When
+        final boolean accept = filter.accept(key.getFirst(), value);
+
+        // Then
+        assertFalse(accept);
+    }
+
+    @Test
     public void shouldNotAcceptElementWhenSchemaValidatorDoesNotAcceptElement() throws Exception {
         // Given
         final ValidatorFilter filter = new ValidatorFilter();
@@ -156,6 +181,25 @@ public class ValidatorFilterTest {
                         .clazz(Boolean.class)
                         .build())
                 .edge(TestGroups.EDGE, new SchemaEdgeDefinition.Builder()
+                        .source(TestTypes.ID_STRING)
+                        .destination(TestTypes.ID_STRING)
+                        .directed(TestTypes.DIRECTED_TRUE)
+                        .build())
+                .build();
+    }
+
+    private Schema getSchemaWithEdge2() throws UnsupportedEncodingException {
+        return new Schema.Builder()
+                .type(TestTypes.ID_STRING, new TypeDefinition.Builder()
+                        .clazz(String.class)
+                        .validator(new gaffer.data.element.function.ElementFilter.Builder()
+                                .execute(new ExampleFilterFunction())
+                                .build())
+                        .build())
+                .type(TestTypes.DIRECTED_TRUE, new TypeDefinition.Builder()
+                        .clazz(Boolean.class)
+                        .build())
+                .edge(TestGroups.EDGE_2, new SchemaEdgeDefinition.Builder()
                         .source(TestTypes.ID_STRING)
                         .destination(TestTypes.ID_STRING)
                         .directed(TestTypes.DIRECTED_TRUE)

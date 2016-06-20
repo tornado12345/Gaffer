@@ -19,6 +19,9 @@ package gaffer.accumulostore.utils;
 import gaffer.commonutil.TestPropertyNames;
 
 public class AccumuloPropertyNames extends TestPropertyNames {
+    public static final String COLUMN_FAMILY = "columnFamily";
+    public static final String COLUMN_FAMILY_2 = "columnFamily2";
     public static final String COLUMN_QUALIFIER = "columnQualifier";
+    public static final String COLUMN_QUALIFIER_2 = "columnQualifier2";
     public static final String TIMESTAMP = "timestamp";
 }

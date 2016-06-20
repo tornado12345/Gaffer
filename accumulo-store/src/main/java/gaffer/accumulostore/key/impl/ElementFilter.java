@@ -20,9 +20,11 @@ import gaffer.accumulostore.key.AccumuloElementConverter;
 import gaffer.accumulostore.key.exception.AccumuloElementConversionException;
 import gaffer.accumulostore.key.exception.ElementFilterException;
 import gaffer.accumulostore.utils.AccumuloStoreConstants;
+import gaffer.accumulostore.utils.ByteArrayEscapeUtils;
 import gaffer.accumulostore.utils.IteratorOptionsBuilder;
 import gaffer.commonutil.CommonConstants;
 import gaffer.data.element.Element;
+import gaffer.data.elementdefinition.ElementDefinitions;
 import gaffer.data.elementdefinition.exception.SchemaException;
 import gaffer.data.elementdefinition.view.View;
 import gaffer.store.ElementValidator;
@@ -35,7 +37,9 @@ import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The ElementFilter will filter out {@link Element}s based on the filtering
@@ -44,9 +48,15 @@ import java.util.Map;
 public class ElementFilter extends Filter {
     private ElementValidator validator;
     private AccumuloElementConverter elementConverter;
+    private Set<byte[]> allValidEscapedGroupsBytes;
+    private Schema schema;
 
     @Override
     public boolean accept(final Key key, final Value value) {
+        if (!isGroupValid(key)) {
+            return false;
+        }
+
         final Element element;
         try {
             element = elementConverter.getFullElement(key, value);
@@ -58,7 +68,8 @@ public class ElementFilter extends Filter {
     }
 
     @Override
-    public void init(final SortedKeyValueIterator<Key, Value> source, final Map<String, String> options,
+    public void init(final SortedKeyValueIterator<Key, Value> source,
+                     final Map<String, String> options,
                      final IteratorEnvironment env) throws IOException {
         super.init(source, options, env);
         validateOptions(options);
@@ -76,14 +87,13 @@ public class ElementFilter extends Filter {
             throw new IllegalArgumentException("Must specify the " + AccumuloStoreConstants.SCHEMA);
         }
 
-        validator = getElementValidator(options);
-
-        final Schema schema;
         try {
             schema = Schema.fromJson(options.get(AccumuloStoreConstants.SCHEMA).getBytes(CommonConstants.UTF_8));
         } catch (final UnsupportedEncodingException e) {
             throw new SchemaException("Unable to deserialise the schema from JSON", e);
         }
+
+        validator = getElementValidator(options);
 
         try {
             final Class<?> elementConverterClass = Class
@@ -110,10 +120,65 @@ public class ElementFilter extends Filter {
             throw new IllegalArgumentException("Must specify the " + AccumuloStoreConstants.VIEW);
         }
 
+        final View view;
         try {
-            return new ElementValidator(View.fromJson(options.get(AccumuloStoreConstants.VIEW).getBytes(CommonConstants.UTF_8)));
+            view = View.fromJson(options.get(AccumuloStoreConstants.VIEW).getBytes(CommonConstants.UTF_8));
         } catch (final UnsupportedEncodingException e) {
             throw new SchemaException("Unable to deserialise view from JSON", e);
         }
+
+        extractValidGroupsBytes(view);
+
+        return new ElementValidator(view);
+    }
+
+    protected void extractValidGroupsBytes(final ElementDefinitions<?, ?> elementDefinitions) {
+        allValidEscapedGroupsBytes = new HashSet<>();
+        for (String group : elementDefinitions.getEntityGroups()) {
+            try {
+                allValidEscapedGroupsBytes.add(ByteArrayEscapeUtils.escape(group.getBytes(CommonConstants.UTF_8)));
+            } catch (UnsupportedEncodingException e) {
+                throw new ElementFilterException("Unable to convert group to bytes: " + group, e);
+            }
+        }
+
+        for (String group : elementDefinitions.getEdgeGroups()) {
+            try {
+                allValidEscapedGroupsBytes.add(ByteArrayEscapeUtils.escape(group.getBytes(CommonConstants.UTF_8)));
+            } catch (UnsupportedEncodingException e) {
+                throw new ElementFilterException("Unable to convert group to bytes: " + group, e);
+            }
+        }
+    }
+
+    protected Schema getSchema() {
+        return schema;
+    }
+
+    private boolean isGroupValid(final Key key) {
+        boolean isGroupValid = false;
+        byte[] columnFam = key.getColumnFamilyData().getBackingArray();
+        for (byte[] validEscapedGroupBytes : allValidEscapedGroupsBytes) {
+            isGroupValid = true;
+
+            int groupBytesLength = validEscapedGroupBytes.length;
+            if (columnFam.length < groupBytesLength
+                    || (columnFam.length > groupBytesLength && ByteArrayEscapeUtils.DELIMITER != columnFam[groupBytesLength])) {
+                isGroupValid = false;
+            } else {
+                for (int i = 0; i < groupBytesLength; i++) {
+                    if (validEscapedGroupBytes[i] != columnFam[i]) {
+                        isGroupValid = false;
+                        break;
+                    }
+                }
+
+                if (isGroupValid) {
+                    break;
+                }
+            }
+        }
+
+        return isGroupValid;
     }
 }

@@ -17,17 +17,14 @@
 package gaffer.accumulostore.key.impl;
 
 import gaffer.accumulostore.utils.AccumuloStoreConstants;
-import gaffer.commonutil.CommonConstants;
-import gaffer.data.elementdefinition.exception.SchemaException;
 import gaffer.store.ElementValidator;
-import gaffer.store.schema.Schema;
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * The ValidatorFilter will filter out {@link gaffer.data.element.Element}s
- * based on the validator functions given in the {@link Schema} that is passed to this iterator.
+ * based on the validator functions given in the {@link gaffer.store.schema.Schema}
+ * that is passed to this iterator.
  * <p>
  * If a {@link gaffer.function.FilterFunction} returns false then the Element is removed.
  */
@@ -43,14 +40,7 @@ public class ValidatorFilter extends ElementFilter {
 
     @Override
     protected ElementValidator getElementValidator(final Map<String, String> options) {
-        if (!options.containsKey(AccumuloStoreConstants.SCHEMA)) {
-            throw new IllegalArgumentException("Must specify the " + AccumuloStoreConstants.SCHEMA);
-        }
-
-        try {
-            return new ElementValidator(Schema.fromJson(options.get(AccumuloStoreConstants.SCHEMA).getBytes(CommonConstants.UTF_8)), false);
-        } catch (UnsupportedEncodingException e) {
-            throw new SchemaException("Unable to deserialise schema from JSON", e);
-        }
+        extractValidGroupsBytes(getSchema());
+        return new ElementValidator(getSchema(), false);
     }
 }

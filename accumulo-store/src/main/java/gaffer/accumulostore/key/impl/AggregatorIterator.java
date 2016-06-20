@@ -57,8 +57,8 @@ public class AggregatorIterator extends Combiner {
         }
         final String group;
         try {
-            group = new String(key.getColumnFamilyData().getBackingArray(), CommonConstants.UTF_8);
-        } catch (final UnsupportedEncodingException e) {
+            group = elementConverter.getGroupFromColumnFamily(key.getColumnFamilyData().getBackingArray());
+        } catch (final AccumuloElementConversionException e) {
             throw new AggregationException("Failed to recreate a graph element from a key and value", e);
         }
 

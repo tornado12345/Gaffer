@@ -83,13 +83,14 @@ public abstract class AbstractAccumuloElementConverterTest {
     }
 
     @Test
-    public void shouldReturnAccumuloKeyConverterFromCFCQPropertydEdge() throws SchemaException, AccumuloElementConversionException, IOException {
+    public void shouldReturnAccumuloKeyConverterFromCFCQPropertyEdge() throws SchemaException, AccumuloElementConversionException, IOException {
         // Given
         final Edge edge = new Edge(TestGroups.EDGE);
         edge.setDestination("2");
         edge.setSource("1");
         edge.setDirected(false);
-        edge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, "Test");
+        edge.putProperty(AccumuloPropertyNames.COLUMN_FAMILY, "ColFam");
+        edge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, "ColQual");
 
         // When
         final Pair<Key> keys = converter.getKeysFromElement(edge);
@@ -99,11 +100,38 @@ public abstract class AbstractAccumuloElementConverterTest {
         assertEquals("1", newEdge.getSource());
         assertEquals("2", newEdge.getDestination());
         assertEquals(false, newEdge.isDirected());
-        assertEquals("Test", newEdge.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER));
+        assertEquals("ColFam", newEdge.getProperty(AccumuloPropertyNames.COLUMN_FAMILY));
+        assertEquals("ColQual", newEdge.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER));
     }
 
     @Test
-    public void shouldReturnAccumuloKeyConverterFromCFCQPropertydEntity() throws SchemaException, AccumuloElementConversionException, IOException {
+    public void shouldReturnAccumuloKeyConverterFromMultipleCFCQPropertyEdge() throws SchemaException, AccumuloElementConversionException, IOException {
+        // Given
+        final Edge edge = new Edge(TestGroups.EDGE);
+        edge.setDestination("2");
+        edge.setSource("1");
+        edge.setDirected(false);
+        edge.putProperty(AccumuloPropertyNames.COLUMN_FAMILY, "ColFam");
+        edge.putProperty(AccumuloPropertyNames.COLUMN_FAMILY_2, "ColFam2");
+        edge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, "ColQual");
+        edge.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER_2, "ColQual2");
+
+        // When
+        final Pair<Key> keys = converter.getKeysFromElement(edge);
+        final Edge newEdge = (Edge) converter.getElementFromKey(keys.getFirst());
+
+        // Then
+        assertEquals("1", newEdge.getSource());
+        assertEquals("2", newEdge.getDestination());
+        assertEquals(false, newEdge.isDirected());
+        assertEquals("ColFam", newEdge.getProperty(AccumuloPropertyNames.COLUMN_FAMILY));
+        assertEquals("ColFam2", newEdge.getProperty(AccumuloPropertyNames.COLUMN_FAMILY_2));
+        assertEquals("ColQual", newEdge.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER));
+        assertEquals("ColQual2", newEdge.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER_2));
+    }
+
+    @Test
+    public void shouldReturnAccumuloKeyConverterFromCFCQPropertyEntity() throws SchemaException, AccumuloElementConversionException, IOException {
         // Given
         final Entity entity = new Entity(TestGroups.ENTITY);
         entity.setVertex("3");
@@ -119,7 +147,29 @@ public abstract class AbstractAccumuloElementConverterTest {
     }
 
     @Test
-    public void shouldReturnAccumuloKeyConverterMultipleCQPropertydEdge() throws SchemaException, AccumuloElementConversionException, IOException {
+    public void shouldReturnAccumuloKeyConverterFromMultipleCFCQPropertyEntity() throws SchemaException, AccumuloElementConversionException, IOException {
+        // Given
+        final Entity entity = new Entity(TestGroups.ENTITY);
+        entity.setVertex("3");
+        entity.putProperty(AccumuloPropertyNames.COLUMN_FAMILY, "ColFam");
+        entity.putProperty(AccumuloPropertyNames.COLUMN_FAMILY_2, "ColFam2");
+        entity.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER, "ColQual");
+        entity.putProperty(AccumuloPropertyNames.COLUMN_QUALIFIER_2, "ColQual2");
+
+        // When
+        final Pair<Key> keys = converter.getKeysFromElement(entity);
+        final Entity newEntity = (Entity) converter.getElementFromKey(keys.getFirst());
+
+        // Then
+        assertEquals("3", newEntity.getVertex());
+        assertEquals("ColFam", newEntity.getProperty(AccumuloPropertyNames.COLUMN_FAMILY));
+        assertEquals("ColFam2", newEntity.getProperty(AccumuloPropertyNames.COLUMN_FAMILY_2));
+        assertEquals("ColQual", newEntity.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER));
+        assertEquals("ColQual2", newEntity.getProperty(AccumuloPropertyNames.COLUMN_QUALIFIER_2));
+    }
+
+    @Test
+    public void shouldReturnAccumuloKeyConverterMultipleCQPropertyEdge() throws SchemaException, AccumuloElementConversionException, IOException {
         // Given
         final Edge edge = new Edge(TestGroups.EDGE);
         edge.setDestination("2");

@@ -46,7 +46,7 @@ import java.util.Set;
  * </ul>
  */
 public enum StorePositions {
-    COLUMN_QUALIFIER, VISIBILITY, TIMESTAMP, VALUE;
+    COLUMN_FAMILY, COLUMN_QUALIFIER, VISIBILITY, TIMESTAMP, VALUE;
 
     public static final Set<String> NAMES = getNames();
 

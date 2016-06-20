@@ -4,14 +4,35 @@
       "serialiserClass": "gaffer.serialisation.implementation.JavaSerialiser",
       "position": "COLUMN_QUALIFIER",
       "aggregateFunction": {
-        "class": "gaffer.accumulostore.test.function.ExampleSum"
+        "class": "gaffer.function.simple.aggregate.Sum"
+      }
+    },
+    "colQualProperty2": {
+      "serialiserClass": "gaffer.serialisation.implementation.JavaSerialiser",
+      "position": "COLUMN_QUALIFIER",
+      "aggregateFunction": {
+        "class": "gaffer.function.simple.aggregate.Sum"
       }
     },
     "simpleProperty": {
       "serialiserClass": "gaffer.serialisation.implementation.JavaSerialiser",
       "position": "VALUE",
       "aggregateFunction": {
-        "class": "gaffer.accumulostore.test.function.ExampleSum"
+        "class": "gaffer.function.simple.aggregate.Sum"
+      }
+    },
+    "columnFamilyProperty": {
+      "position": "COLUMN_FAMILY",
+      "serialiserClass": "gaffer.serialisation.simple.StringSerialiser",
+      "aggregateFunction": {
+        "class": "gaffer.function.simple.aggregate.SingleValueAggregateFunction"
+      }
+    },
+    "columnFamilyProperty2": {
+      "position": "COLUMN_FAMILY",
+      "serialiserClass": "gaffer.serialisation.simple.StringSerialiser",
+      "aggregateFunction": {
+        "class": "gaffer.function.simple.aggregate.SingleValueAggregateFunction"
       }
     }
   }

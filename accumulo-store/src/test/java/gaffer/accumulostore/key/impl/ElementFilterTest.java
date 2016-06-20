@@ -20,6 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import gaffer.accumulostore.function.ExampleFilterFunction;
 import gaffer.accumulostore.key.core.impl.byteEntity.ByteEntityAccumuloElementConverter;
 import gaffer.accumulostore.utils.AccumuloStoreConstants;
 import gaffer.accumulostore.utils.Pair;
@@ -27,7 +28,9 @@ import gaffer.commonutil.CommonConstants;
 import gaffer.commonutil.TestGroups;
 import gaffer.data.element.Edge;
 import gaffer.data.element.Element;
+import gaffer.data.element.IdentifierType;
 import gaffer.data.elementdefinition.view.View;
+import gaffer.data.elementdefinition.view.ViewElementDefinition;
 import gaffer.store.schema.Schema;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -139,13 +142,13 @@ public class ElementFilterTest {
     }
 
     @Test
-    public void shouldNotAcceptElementWhenViewValidatorDoesNotAcceptElement() throws Exception {
+    public void shouldNotAcceptElementWhenInvalidGroup() throws Exception {
         // Given
         final ElementFilter filter = new ElementFilter();
 
         final Map<String, String> options = new HashMap<>();
         options.put(AccumuloStoreConstants.SCHEMA, getSchemaJson());
-        options.put(AccumuloStoreConstants.VIEW, getEmptyViewJson());
+        options.put(AccumuloStoreConstants.VIEW, getViewJson());
         options.put(AccumuloStoreConstants.ACCUMULO_ELEMENT_CONVERTER_CLASS,
                 ByteEntityAccumuloElementConverter.class.getName());
 
@@ -153,7 +156,33 @@ public class ElementFilterTest {
 
         final ByteEntityAccumuloElementConverter converter = new ByteEntityAccumuloElementConverter(getSchema());
 
-        final Element element = new Edge(TestGroups.EDGE, "source", "dest", true);
+        final Element element = new Edge(TestGroups.EDGE_2, "source", "dest", true);
+        final Pair<Key> key = converter.getKeysFromElement(element);
+        final Value value = converter.getValueFromElement(element);
+
+        // When
+        final boolean accept = filter.accept(key.getFirst(), value);
+
+        // Then
+        assertFalse(accept);
+    }
+
+    @Test
+    public void shouldNotAcceptElementWhenViewValidatorDoesNotAcceptElement() throws Exception {
+        // Given
+        final ElementFilter filter = new ElementFilter();
+
+        final Map<String, String> options = new HashMap<>();
+        options.put(AccumuloStoreConstants.SCHEMA, getSchemaJson());
+        options.put(AccumuloStoreConstants.VIEW, getViewJson());
+        options.put(AccumuloStoreConstants.ACCUMULO_ELEMENT_CONVERTER_CLASS,
+                ByteEntityAccumuloElementConverter.class.getName());
+
+        filter.validateOptions(options);
+
+        final ByteEntityAccumuloElementConverter converter = new ByteEntityAccumuloElementConverter(getSchema());
+
+        final Element element = new Edge(TestGroups.EDGE, "invalid", "dest", true);
         final Pair<Key> key = converter.getKeysFromElement(element);
         final Value value = converter.getValueFromElement(element);
 
@@ -166,14 +195,12 @@ public class ElementFilterTest {
 
     private String getViewJson() throws UnsupportedEncodingException {
         final View view = new View.Builder()
-                .edge(TestGroups.EDGE)
-                .build();
-
-        return new String(view.toJson(false), CommonConstants.UTF_8);
-    }
-
-    private String getEmptyViewJson() throws UnsupportedEncodingException {
-        final View view = new View.Builder()
+                .edge(TestGroups.EDGE, new ViewElementDefinition.Builder()
+                        .filter(new gaffer.data.element.function.ElementFilter.Builder()
+                                .select(IdentifierType.SOURCE)
+                                .execute(new ExampleFilterFunction())
+                                .build())
+                        .build())
                 .build();
 
         return new String(view.toJson(false), CommonConstants.UTF_8);
@@ -182,6 +209,7 @@ public class ElementFilterTest {
     private Schema getSchema() throws UnsupportedEncodingException {
         return new Schema.Builder()
                 .edge(TestGroups.EDGE)
+                .edge(TestGroups.EDGE_2)
                 .build();
     }
 
