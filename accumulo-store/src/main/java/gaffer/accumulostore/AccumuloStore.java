@@ -45,6 +45,7 @@ import gaffer.accumulostore.operation.impl.GetElementsBetweenSets;
 import gaffer.accumulostore.operation.impl.GetElementsInRanges;
 import gaffer.accumulostore.operation.impl.GetElementsWithinSet;
 import gaffer.accumulostore.operation.impl.GetEntitiesInRanges;
+import gaffer.accumulostore.operation.impl.InitialiseAccumuloStoreExport;
 import gaffer.accumulostore.utils.Pair;
 import gaffer.accumulostore.utils.TableUtils;
 import gaffer.data.element.Element;
@@ -61,6 +62,7 @@ import gaffer.store.Store;
 import gaffer.store.StoreException;
 import gaffer.store.StoreProperties;
 import gaffer.store.StoreTrait;
+import gaffer.store.operation.handler.export.InitialiseExportHandler;
 import gaffer.store.operation.handler.OperationHandler;
 import gaffer.store.schema.Schema;
 import org.apache.accumulo.core.client.BatchWriter;
@@ -146,6 +148,10 @@ public class AccumuloStore extends Store {
         addOperationHandler(SplitTable.class, new SplitTableHandler());
         addOperationHandler(SampleDataForSplitPoints.class, new SampleDataForSplitPointsHandler());
         addOperationHandler(ImportAccumuloKeyValueFiles.class, new ImportAccumuloKeyValueFilesHandler());
+
+        // These export operations are handled directly, but need to be added
+        // here to they are registered that they are supported.
+        addOperationHandler(InitialiseAccumuloStoreExport.class, new InitialiseExportHandler());
     }
 
     @Override
