@@ -35,6 +35,7 @@
         <module>example</module>
         <module>gaffer-integration-tests</module>
         <module>example-rest</module>
+        <module>schema-builder</module>
         <module>tinkerpop</module>
     </modules>
 
@@ -44,6 +45,9 @@
 
         <java.version>1.7</java.version>
         <scala.version>2.10</scala.version>
+
+        <json4s.version>3.2.4</json4s.version>
+        <swagger-version>1.3.2</swagger-version>
 
         <!-- Dependency version properties -->
         <junit.version>4.12</junit.version>
