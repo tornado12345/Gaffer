@@ -237,13 +237,14 @@
                 <td>
                     <table class="table transparent">
                         <tbody>
-                        <tr ng-repeat="(property, type) in group.properties">
+                        <tr ng-repeat="property in group.properties">
                             <td>
                                 <input class="form-control" type="text"
-                                       ng-model="property"/>
+                                       ng-model="property.name"/>
                             </td>
                             <td>
-                                <select class="form-control" ng-model="type"
+                                <select class="form-control"
+                                        ng-model="property.type"
                                         ng-options="name as name for (name, def) in types">
                                 </select>
                             </td>
@@ -317,13 +318,14 @@
                 <td>
                     <table class="table transparent">
                         <tbody>
-                        <tr ng-repeat="(property, type) in selectedEdge.group.properties">
+                        <tr ng-repeat="property in selectedEdge.group.properties">
                             <td>
                                 <input class="form-control" type="text"
-                                       ng-model="property"/>
+                                       ng-model="property.name"/>
                             </td>
                             <td>
-                                <select class="form-control" ng-model="type"
+                                <select class="form-control"
+                                        ng-model="property.type"
                                         ng-options="name as name for (name, def) in types">
                                 </select>
                             </td>

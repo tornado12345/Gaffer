@@ -272,16 +272,15 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
 
    $scope.addEntityGroup = function(vertex) {
        entityGroupIndex = entityGroupIndex + 1;
-       vertex.groups.push({name: 'entity' + entityGroupIndex, properties: {}});
+       vertex.groups.push({name: 'entity' + entityGroupIndex, properties: []});
        if(!$scope.types[vertex.id]) {
           $scope.addType(vertex.id, {class: 'java.lang.String', aggregateFunction: {class: ''}, serialiser: '', position: '', locked: true});
        }
     }
 
    $scope.addProperty = function(properties) {
-       var count = Object.keys(properties).length
-       var property = "property" + (count + 1);
-       properties[property] = Object.keys($scope.types)[0];
+       var name = "property" + (properties.length + 1);
+       properties.push({name: name, type: Object.keys($scope.types)[0]});
     }
 
   $scope.onVertexIdChange = function(vertex) {
@@ -375,7 +374,7 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
    $scope.onEdgeAdded = function(edge) {
       $scope.edgesById[edge.id] = edge;
       edgeGroupIndex = edgeGroupIndex + 1;
-      edge.group = {name: 'edge' + edgeGroupIndex, properties: {}};
+      edge.group = {name: 'edge' + edgeGroupIndex, properties: []};
       $scope.onEdgeGroupChange(edge);
       if(!$scope.types[edge.source]) {
           $scope.addType(edge.source, {class: 'java.lang.String', aggregateFunction: {class: ''}, serialiser: '', position: '', locked: true});
@@ -494,7 +493,11 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
             var vertex = $scope.verticesById[id];
             for (var i in vertex.groups) {
                 var group = vertex.groups[i];
-                entities[group.name] = {vertex: vertex.id, properties: group.properties};
+                var properties = {};
+                for (var i in group.properties) {
+                  properties[group.properties[i].name] = group.properties[i].type;
+                }
+                entities[group.name] = {vertex: vertex.id, properties: properties};
                 if(group.validateFunctions) {
                     entities[group.name].validateFunctions = group.validateFunctions;
                 }
@@ -507,7 +510,11 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
         var edges = {};
         for (var id in $scope.edgesById) {
             var edge = $scope.edgesById[id];
-            edges[edge.group.name] = {source: $scope.verticesById[edge.source].id, destination: $scope.verticesById[edge.destination].id, directed: edge.directed.toString(), properties: edge.group.properties};
+            var properties = {};
+            for (var i in edge.group.properties) {
+              properties[edge.group.properties[i].name] = edge.group.properties[i].type;
+            }
+            edges[edge.group.name] = {source: $scope.verticesById[edge.source].id, destination: $scope.verticesById[edge.destination].id, directed: edge.directed.toString(), properties: properties};
             if(edge.validateFunctions) {
                 edges[edge.group.name].validateFunctions = group.validateFunctions;
             }
@@ -652,7 +659,12 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
                     elementsGraph.addVertex(vertex);
                 }
 
-                var group = {name: groupName, properties: jsonEntity.properties};
+                var properties = [];
+                for (var name in jsonEntity.properties) {
+                  properties.push({name: name, type: jsonEntity.properties[name]});
+                }
+
+                var group = {name: groupName, properties: properties};
                 if(jsonEntity.validateFunctions) {
                     group.validateFunctions = jsonEntity.validateFunctions;
                 }
@@ -671,13 +683,19 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
             for (var groupName in jsonSchema.edges) {
                 var jsonEdge = jsonSchema.edges[groupName];
                 edgeIndex = edgeIndex + 1;
-                var edge = {id: groupName, source: jsonEdge.source, destination: jsonEdge.destination, directed: ('true' == jsonEdge.directed), group: {name: groupName, properties: jsonEdge.properties}};
+
+                var properties = [];
+                for (var name in jsonEdge.properties) {
+                  properties.push({name: name, type: jsonEntity.properties[name]});
+                }
+
+                var edge = {id: groupName, source: jsonEdge.source, destination: jsonEdge.destination, directed: ('true' == jsonEdge.directed), group: {name: groupName, properties: properties}};
 
                 if(jsonEdge.validateFunctions) {
                     group.validateFunctions = jsonEdge.validateFunctions;
                 }
 
-                for (var name in edge.properties) {
+                for (var name in jsonEdge.properties) {
                     var typeName = edge.properties[name];
                     if(!$scope.types[typeName]) {
                         $scope.types[typeName] = {};
