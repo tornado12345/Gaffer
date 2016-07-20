@@ -435,7 +435,7 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
 
     $scope.initialise = function() {
         $scope.openGraph();
-        $http.get('http://localhost:8080/schema-builder/rest/commonSchema')
+        $http.get('rest/commonSchema')
          .success(function(data){
             loadSchema(data);
          })
@@ -453,7 +453,7 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
     };
 
     $scope.onTypeClassChange = function(typeName) {
-        $http.post('http://localhost:8080/schema-builder/rest/functions',
+        $http.post('rest/functions',
               {typeName: typeName,  typeClass: $scope.types[typeName].class})
              .success(function(data){
                 var typeDefClone = $.extend(true, {}, $scope.types[typeName]);
@@ -572,7 +572,7 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
         $scope.dataTypes = dataTypes;
         $scope.storeTypes = storeTypes;
 
-        $http.post('http://localhost:8080/schema-builder/rest/validate',
+        $http.post('rest/validate',
         [$scope.dataSchema, $scope.dataTypes, $scope.storeTypes])
              .success(function(data){
                 $scope.validateMsg = data.message;
