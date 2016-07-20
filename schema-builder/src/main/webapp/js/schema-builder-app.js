@@ -696,7 +696,7 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
                 }
 
                 for (var name in jsonEdge.properties) {
-                    var typeName = edge.properties[name];
+                    var typeName = jsonEdge.properties[name];
                     if(!$scope.types[typeName]) {
                         $scope.types[typeName] = {};
                     }
