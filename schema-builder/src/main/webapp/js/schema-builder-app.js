@@ -686,7 +686,7 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
 
                 var properties = [];
                 for (var name in jsonEdge.properties) {
-                  properties.push({name: name, type: jsonEntity.properties[name]});
+                  properties.push({name: name, type: jsonEdge.properties[name]});
                 }
 
                 var edge = {id: groupName, source: jsonEdge.source, destination: jsonEdge.destination, directed: ('true' == jsonEdge.directed), group: {name: groupName, properties: properties}};
