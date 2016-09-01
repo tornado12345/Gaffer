@@ -16,6 +16,13 @@
  
 var app = angular.module('app', []);
 
+app.config(['$locationProvider', function AppConfig($locationProvider) {
+    $locationProvider.html5Mode({
+        enabled: true,
+        requireBase: false
+    });
+}]);
+
 app.factory('elementsGraph', [ '$q', function( $q ){
   var cy;
   var elementsGraph = function(vertices, edges){
@@ -206,7 +213,7 @@ app.factory('elementsGraph', [ '$q', function( $q ){
   return elementsGraph;
 } ]);
 
-app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $scope, $http, elementsGraph ){
+app.controller('ElementsCtrl', [ '$scope', '$http', '$location', 'elementsGraph', function($scope, $http, $location, elementsGraph){
   var cy
   $scope.showGraph = true;
 
@@ -433,15 +440,30 @@ app.controller('ElementsCtrl', [ '$scope', '$http', 'elementsGraph', function( $
         $scope.openGraph();
     }
 
-    $scope.initialise = function() {
-        $scope.openGraph();
-        $http.get('rest/commonSchema')
+    var loadSchemaFromUrl = function(url) {
+        $http.get(url)
          .success(function(data){
             loadSchema(data);
-         })
-         .error(function(data){
-            loadSchema({});
          });
+    }
+    $scope.initialise = function() {
+        $scope.openGraph();
+        loadSchema({});
+        loadSchemaFromUrl('rest/commonSchema');
+        if($location.search().dataSchema) {
+            loadSchemaFromUrl($location.search().dataSchema);
+        }
+        if($location.search().dataTypes) {
+            loadSchemaFromUrl($location.search().dataTypes);
+        }
+        if($location.search().storeTypes) {
+            loadSchemaFromUrl($location.search().storeTypes);
+        }
+        if($location.search().schema) {
+            loadSchemaFromUrl($location.search().schema);
+        }
+
+        $scope.redraw();
     };
 
     $scope.openTypes = function() {
