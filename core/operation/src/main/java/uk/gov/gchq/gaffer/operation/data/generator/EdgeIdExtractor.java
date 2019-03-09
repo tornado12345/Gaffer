@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import uk.gov.gchq.gaffer.data.element.id.EdgeId;
 import uk.gov.gchq.gaffer.data.generator.OneToOneObjectGenerator;
 import uk.gov.gchq.gaffer.operation.data.EdgeSeed;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 /**
  * Generates {@link uk.gov.gchq.gaffer.data.element.id.EdgeId}s from and {@link uk.gov.gchq.gaffer.data.element.Edge}s.
@@ -29,6 +30,7 @@ import uk.gov.gchq.koryphe.Since;
  * {@link java.lang.IllegalArgumentException} will be thrown if this is attempted.
  */
 @Since("1.0.0")
+@Summary("Generates EdgeIds from an Edge")
 public class EdgeIdExtractor implements OneToOneObjectGenerator<EdgeId> {
     /**
      * @param element the element to convert to {@link uk.gov.gchq.gaffer.data.element.id.EdgeId}.

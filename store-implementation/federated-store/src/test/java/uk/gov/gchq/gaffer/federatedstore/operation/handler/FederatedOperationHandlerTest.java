@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreConstants.KEY_OPERATION_OPTIONS_GRAPH_IDS;
 import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreConstants.KEY_SKIP_FAILED_FEDERATED_STORE_EXECUTE;
-import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreUser.testUser;
+import static uk.gov.gchq.gaffer.user.StoreUser.testUser;
 
 public class FederatedOperationHandlerTest {
     private static final String TEST_GRAPH_ID = "testGraphId";
@@ -159,7 +159,6 @@ public class FederatedOperationHandlerTest {
         StoreProperties storeProperties = new StoreProperties();
 
         Store mockStoreInner = getMockStore(unusedSchema, storeProperties);
-        given(mockStoreInner.createContext(any(User.class))).willReturn(context);
         given(mockStoreInner.execute(any(OperationChain.class), any(Context.class))).willThrow(new RuntimeException(message));
 
         FederatedStore mockStore = mock(FederatedStore.class);
@@ -188,9 +187,7 @@ public class FederatedOperationHandlerTest {
 
         Store mockStore1 = getMockStore(unusedSchema, storeProperties);
         given(mockStore1.execute(any(OperationChain.class), eq(context))).willReturn(1);
-        given(mockStore1.createContext(any(User.class))).willReturn(context);
         Store mockStore2 = getMockStore(unusedSchema, storeProperties);
-        given(mockStore2.createContext(any(User.class))).willReturn(context);
         given(mockStore2.execute(any(OperationChain.class), eq(context))).willThrow(new RuntimeException("Test Exception"));
 
         FederatedStore mockStore = mock(FederatedStore.class);

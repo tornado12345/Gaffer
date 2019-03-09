@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.yahoo.sketches.theta.Sketches;
 import com.yahoo.sketches.theta.Union;
 
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.binaryoperator.KorypheBinaryOperator;
 
 /**
@@ -27,6 +28,7 @@ import uk.gov.gchq.koryphe.binaryoperator.KorypheBinaryOperator;
  * using a {@link Union}.
  */
 @Since("1.0.0")
+@Summary("Aggregates Sketches using a Union")
 public class SketchAggregator extends KorypheBinaryOperator<Sketch> {
 
     @Override

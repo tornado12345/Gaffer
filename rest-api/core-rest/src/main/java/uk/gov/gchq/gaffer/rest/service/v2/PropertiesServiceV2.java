@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,10 @@ import static uk.gov.gchq.gaffer.rest.SystemProperty.APP_TITLE;
 import static uk.gov.gchq.gaffer.rest.SystemProperty.APP_TITLE_DEFAULT;
 import static uk.gov.gchq.gaffer.rest.SystemProperty.FAVICON_LARGE_URL;
 import static uk.gov.gchq.gaffer.rest.SystemProperty.FAVICON_SMALL_URL;
+import static uk.gov.gchq.gaffer.rest.SystemProperty.GAFFER_VERSION;
+import static uk.gov.gchq.gaffer.rest.SystemProperty.GAFFER_VERSION_DEFAULT;
+import static uk.gov.gchq.gaffer.rest.SystemProperty.KORYPHE_VERSION;
+import static uk.gov.gchq.gaffer.rest.SystemProperty.KORYPHE_VERSION_DEFAULT;
 import static uk.gov.gchq.gaffer.rest.SystemProperty.LOGO_IMAGE_URL;
 import static uk.gov.gchq.gaffer.rest.SystemProperty.LOGO_IMAGE_URL_DEFAULT;
 import static uk.gov.gchq.gaffer.rest.SystemProperty.LOGO_LINK;
@@ -67,6 +71,8 @@ public class PropertiesServiceV2 implements IPropertiesServiceV2 {
         map.put(LOGO_IMAGE_URL, LOGO_IMAGE_URL_DEFAULT);
         map.put(FAVICON_SMALL_URL, LOGO_IMAGE_URL_DEFAULT);
         map.put(FAVICON_LARGE_URL, LOGO_IMAGE_URL_DEFAULT);
+        map.put(GAFFER_VERSION, GAFFER_VERSION_DEFAULT);
+        map.put(KORYPHE_VERSION, KORYPHE_VERSION_DEFAULT);
         return Collections.unmodifiableMap(map);
     }
 

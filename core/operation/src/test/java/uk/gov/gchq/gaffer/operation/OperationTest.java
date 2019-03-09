@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ import org.junit.Test;
 
 import uk.gov.gchq.gaffer.JSONSerialisationTest;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.ValidationResult;
+import uk.gov.gchq.koryphe.util.SummaryUtil;
 import uk.gov.gchq.koryphe.util.VersionUtil;
 
 import java.util.Collections;
@@ -91,6 +93,22 @@ public abstract class OperationTest<T extends Operation> extends JSONSerialisati
         }
         assumeTrue(annotation.value() + " is not a valid value string.",
                 VersionUtil.validateVersionString(annotation.value()));
+    }
+
+    @Test
+    public void shouldHaveSummaryAnnotation() {
+        // Given
+        final T instance = getTestObject();
+
+        // When
+        final Summary annotation = instance.getClass().getAnnotation(Summary.class);
+
+        // Then
+        if (null == annotation || null == annotation.value()) {
+            throw new AssumptionViolatedException("Missing Summary annotation on class " + instance.getClass().getName());
+        }
+        assumeTrue(annotation.value() + " is not a valid value string.",
+                SummaryUtil.validateSummaryString(annotation.value()));
     }
 }
 

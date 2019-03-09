@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -257,7 +257,7 @@ public class ScoreOperationChainHandlerTest {
         final Map<Class<? extends Operation>, ScoreResolver> resolvers = new HashMap<>();
 
         final ScoreResolver scoreResolver = mock(NamedOperationScoreResolver.class);
-        final ScoreResolver scoreResolver1 = mock(NamedOperationScoreResolver.class);
+        final ScoreResolver scoreResolver1 = mock(DefaultScoreResolver.class);
 
         final Context context = mock(Context.class);
         final Store store = mock(Store.class);
@@ -265,8 +265,8 @@ public class ScoreOperationChainHandlerTest {
         final ScoreOperationChain scoreOperationChain = mock(ScoreOperationChain.class);
         final StoreProperties storeProperties = mock(StoreProperties.class);
 
-        final GetAdjacentIds op1 = mock(GetAdjacentIds.class);
-        final AddElements op2 = mock(AddElements.class);
+        final GetAdjacentIds op1 = new GetAdjacentIds();
+        final AddElements op2 = new AddElements();
         final Map<Class<? extends Operation>, Integer> opScores = new LinkedHashMap<>();
         opScores.put(GetAdjacentIds.class, 2);
         handler.setOpScores(opScores);

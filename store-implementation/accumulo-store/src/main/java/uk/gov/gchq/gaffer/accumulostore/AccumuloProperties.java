@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public class AccumuloProperties extends StoreProperties {
     public static final String NUM_THREADS_FOR_BATCH_WRITER = "accumulo.numThreadsForBatchWriter";
     public static final String TABLE_REPLICATION_FACTOR = "accumulo.file.replication";
     public static final String ENABLE_VALIDATOR_ITERATOR = "gaffer.store.accumulo.enable.validator.iterator";
+    public static final String HDFS_SKIP_PERMISSIONS = "accumulostore.operation.hdfs.skip_permissions";
 
     // default values
     private static final String NUM_THREADS_FOR_BATCH_WRITER_DEFAULT = "10";

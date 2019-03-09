@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import uk.gov.gchq.gaffer.operation.Operation;
 import uk.gov.gchq.gaffer.operation.io.InputOutput;
 import uk.gov.gchq.gaffer.operation.serialisation.TypeReferenceImpl;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import java.util.function.Function;
  */
 @JsonPropertyOrder(value = {"class", "input", "functions"}, alphabetic = true)
 @Since("1.2.0")
+@Summary("Maps an input to an output using provided functions")
 public class Map<I, O> implements InputOutput<I, O> {
     private I input;
     private java.util.Map<String, String> options;
@@ -47,7 +49,6 @@ public class Map<I, O> implements InputOutput<I, O> {
     private List<Function> functions;
 
     public Map() {
-        this(new ArrayList<>());
     }
 
     public Map(final Function function) {
@@ -76,6 +77,7 @@ public class Map<I, O> implements InputOutput<I, O> {
     @Override
     public Map<I, O> shallowClone() throws CloneFailedException {
         final Map<I, O> clone = new Map<>();
+        clone.setFunctions(new ArrayList<>());
         for (final Function func : functions) {
             clone.getFunctions().add(func);
         }

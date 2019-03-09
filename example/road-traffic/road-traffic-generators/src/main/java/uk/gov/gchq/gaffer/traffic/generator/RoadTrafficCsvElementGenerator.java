@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import uk.gov.gchq.gaffer.data.element.Entity;
 import uk.gov.gchq.gaffer.traffic.ElementGroup;
 import uk.gov.gchq.gaffer.types.FreqMap;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +46,7 @@ import static uk.gov.gchq.gaffer.traffic.generator.RoadTrafficDataField.Road;
 import static uk.gov.gchq.gaffer.traffic.generator.RoadTrafficDataField.dCount;
 
 @Since("1.0.0")
+@Summary("CSV ElementGenerator for Road-Traffic demo")
 public class RoadTrafficCsvElementGenerator extends RoadTrafficElementGenerator<CSVRecord> {
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Crown Copyright
+ * Copyright 2018-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.commons.lang3.exception.CloneFailedException;
 
 import uk.gov.gchq.gaffer.graph.hook.GraphHook;
+import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 @JsonPropertyOrder(
         value = {"class", "graphId"},
         alphabetic = true
 )
-
+@Since("1.4.0")
+@Summary("Adds a new Graph with hooks to the federated store")
 public class AddGraphWithHooks extends AddGraph {
     private GraphHook[] hooks;
 
@@ -38,6 +41,7 @@ public class AddGraphWithHooks extends AddGraph {
                 .parentSchemaIds(getParentSchemaIds())
                 .parentPropertiesId(getParentPropertiesId())
                 .options(getOptions())
+                .disabledByDefault(isDisabledByDefault())
                 .isPublic(getIsPublic())
                 .hooks(hooks);
 

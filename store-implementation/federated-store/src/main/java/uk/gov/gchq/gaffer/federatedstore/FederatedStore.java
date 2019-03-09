@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import uk.gov.gchq.gaffer.federatedstore.exception.StorageException;
 import uk.gov.gchq.gaffer.federatedstore.operation.AddGraph;
 import uk.gov.gchq.gaffer.federatedstore.operation.AddGraphWithHooks;
 import uk.gov.gchq.gaffer.federatedstore.operation.FederatedOperationChain;
+import uk.gov.gchq.gaffer.federatedstore.operation.FederatedOperationChainValidator;
 import uk.gov.gchq.gaffer.federatedstore.operation.GetAllGraphIds;
 import uk.gov.gchq.gaffer.federatedstore.operation.RemoveGraph;
 import uk.gov.gchq.gaffer.federatedstore.operation.handler.FederatedAggregateHandler;
@@ -40,10 +41,13 @@ import uk.gov.gchq.gaffer.federatedstore.operation.handler.impl.FederatedGetAdja
 import uk.gov.gchq.gaffer.federatedstore.operation.handler.impl.FederatedGetAllElementsHandler;
 import uk.gov.gchq.gaffer.federatedstore.operation.handler.impl.FederatedGetAllGraphIDHandler;
 import uk.gov.gchq.gaffer.federatedstore.operation.handler.impl.FederatedGetElementsHandler;
+import uk.gov.gchq.gaffer.federatedstore.operation.handler.impl.FederatedGetTraitsHandler;
 import uk.gov.gchq.gaffer.federatedstore.operation.handler.impl.FederatedOperationChainHandler;
 import uk.gov.gchq.gaffer.federatedstore.operation.handler.impl.FederatedRemoveGraphHandler;
+import uk.gov.gchq.gaffer.federatedstore.schema.FederatedViewValidator;
 import uk.gov.gchq.gaffer.federatedstore.util.FederatedStoreUtil;
 import uk.gov.gchq.gaffer.graph.Graph;
+import uk.gov.gchq.gaffer.graph.GraphSerialisable;
 import uk.gov.gchq.gaffer.named.operation.AddNamedOperation;
 import uk.gov.gchq.gaffer.named.view.AddNamedView;
 import uk.gov.gchq.gaffer.operation.Operation;
@@ -64,11 +68,11 @@ import uk.gov.gchq.gaffer.store.StoreProperties;
 import uk.gov.gchq.gaffer.store.StoreTrait;
 import uk.gov.gchq.gaffer.store.library.GraphLibrary;
 import uk.gov.gchq.gaffer.store.operation.GetSchema;
+import uk.gov.gchq.gaffer.store.operation.GetTraits;
 import uk.gov.gchq.gaffer.store.operation.OperationChainValidator;
 import uk.gov.gchq.gaffer.store.operation.handler.OperationHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.OutputOperationHandler;
 import uk.gov.gchq.gaffer.store.schema.Schema;
-import uk.gov.gchq.gaffer.store.schema.ViewValidator;
 import uk.gov.gchq.gaffer.user.User;
 
 import java.util.Collection;
@@ -172,7 +176,7 @@ public class FederatedStore extends Store {
      * @param graphAuths   the access auths for the graph being added
      * @throws StorageException if unable to put graph into storage
      */
-    public void addGraphs(final Set<String> graphAuths, final String addingUserId, final boolean isPublic, final Graph... graphs) throws StorageException {
+    public void addGraphs(final Set<String> graphAuths, final String addingUserId, final boolean isPublic, final GraphSerialisable... graphs) throws StorageException {
         addGraphs(graphAuths, addingUserId, isPublic, FederatedGraphStorage.DEFAULT_DISABLED_BY_DEFAULT, graphs);
     }
 
@@ -193,19 +197,19 @@ public class FederatedStore extends Store {
      * @param graphAuths        the access auths for the graph being added
      * @throws StorageException if unable to put graph into storage
      */
-    public void addGraphs(final Set<String> graphAuths, final String addingUserId, final boolean isPublic, final boolean disabledByDefault, final Graph... graphs) throws StorageException {
+    public void addGraphs(final Set<String> graphAuths, final String addingUserId, final boolean isPublic, final boolean disabledByDefault, final GraphSerialisable... graphs) throws StorageException {
         final FederatedAccess access = new FederatedAccess(graphAuths, addingUserId, isPublicAccessAllowed && isPublic, disabledByDefault);
         addGraphs(access, graphs);
     }
 
-    public void addGraphs(final FederatedAccess access, final Graph... graphs) throws StorageException {
-        for (final Graph graph : graphs) {
+    public void addGraphs(final FederatedAccess access, final GraphSerialisable... graphs) throws StorageException {
+        for (final GraphSerialisable graph : graphs) {
             _add(graph, access);
         }
     }
 
     @Deprecated
-    public void addGraphs(final Set<String> graphAuths, final String addingUserId, final Graph... graphs) throws StorageException {
+    public void addGraphs(final Set<String> graphAuths, final String addingUserId, final GraphSerialisable... graphs) throws StorageException {
         addGraphs(graphAuths, addingUserId, false, graphs);
     }
 
@@ -279,6 +283,10 @@ public class FederatedStore extends Store {
         return StoreTrait.ALL_TRAITS;
     }
 
+    public Set<StoreTrait> getTraits(final GetTraits getTraits, final Context context) {
+        return graphStorage.getTraits(getTraits, context);
+    }
+
     /**
      * <p>
      * Gets a collection of graph objects within FederatedStore scope from the
@@ -339,11 +347,12 @@ public class FederatedStore extends Store {
         addOperationHandler(RemoveGraph.class, new FederatedRemoveGraphHandler());
 
         addOperationHandler(FederatedOperationChain.class, new FederatedOperationChainHandler());
+        addOperationHandler(GetTraits.class, new FederatedGetTraitsHandler());
     }
 
     @Override
     protected OperationChainValidator createOperationChainValidator() {
-        return new FederatedOperationChainValidator(new ViewValidator());
+        return new FederatedOperationChainValidator(new FederatedViewValidator());
     }
 
     @Override
@@ -392,7 +401,7 @@ public class FederatedStore extends Store {
         return (Strings.isNullOrEmpty(value)) ? null : Sets.newHashSet(getCleanStrings(value));
     }
 
-    private void _add(final Graph newGraph, final FederatedAccess access) throws StorageException {
+    private void _add(final GraphSerialisable newGraph, final FederatedAccess access) throws StorageException {
         graphStorage.put(newGraph, access);
     }
 }

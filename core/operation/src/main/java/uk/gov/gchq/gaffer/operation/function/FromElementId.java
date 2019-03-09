@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Crown Copyright
+ * Copyright 2018-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package uk.gov.gchq.gaffer.operation.function;
 import uk.gov.gchq.gaffer.data.element.id.ElementId;
 import uk.gov.gchq.gaffer.data.element.id.EntityId;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.function.KorypheFunction;
 
 
@@ -26,6 +27,7 @@ import uk.gov.gchq.koryphe.function.KorypheFunction;
  * it will unwrap the vertex.
  */
 @Since("1.3.0")
+@Summary("Attempts to extract a vertex from an ElementId")
 public class FromElementId extends KorypheFunction<ElementId, Object> {
     @Override
     public Object apply(final ElementId e) {

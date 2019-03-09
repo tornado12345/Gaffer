@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@
 package uk.gov.gchq.gaffer.federatedstore;
 
 import uk.gov.gchq.gaffer.cache.CacheServiceLoader;
+import uk.gov.gchq.gaffer.commonutil.ExecutorService;
 import uk.gov.gchq.gaffer.commonutil.StreamUtil;
 import uk.gov.gchq.gaffer.federatedstore.exception.StorageException;
-import uk.gov.gchq.gaffer.graph.Graph;
 import uk.gov.gchq.gaffer.graph.GraphConfig;
+import uk.gov.gchq.gaffer.graph.GraphSerialisable;
 import uk.gov.gchq.gaffer.store.StoreException;
 import uk.gov.gchq.gaffer.store.StoreProperties;
 import uk.gov.gchq.gaffer.store.library.HashMapGraphLibrary;
@@ -38,28 +39,29 @@ public class PredefinedFederatedStore extends FederatedStore {
     public void initialise(final String graphId, final Schema schema, final StoreProperties properties) throws StoreException {
         HashMapGraphLibrary.clear();
         CacheServiceLoader.shutdown();
+        ExecutorService.shutdown();
 
         super.initialise(graphId, schema, properties);
 
         // Accumulo store just contains edges
         try {
-            addGraphs(null, User.UNKNOWN_USER_ID, false, new Graph.Builder()
+            addGraphs(null, User.UNKNOWN_USER_ID, false, new GraphSerialisable.Builder()
                     .config(new GraphConfig(ACCUMULO_GRAPH_WITH_EDGES))
-                    .addSchema(new Schema.Builder()
+                    .schema(new Schema.Builder()
                             .merge(schema.clone())
                             .entities(Collections.emptyMap())
                             .build())
-                    .storeProperties(StreamUtil.openStream(getClass(), "properties/singleUseMockAccStore.properties"))
+                    .properties(StreamUtil.openStream(getClass(), "properties/singleUseMockAccStore.properties"))
                     .build());
 
             // Accumulo store just contains entities
-            addGraphs(null, User.UNKNOWN_USER_ID, false, new Graph.Builder()
+            addGraphs(null, User.UNKNOWN_USER_ID, false, new GraphSerialisable.Builder()
                     .config(new GraphConfig(ACCUMULO_GRAPH_WITH_ENTITIES))
-                    .addSchema(new Schema.Builder()
+                    .schema(new Schema.Builder()
                             .merge(schema.clone())
                             .edges(Collections.emptyMap())
                             .build())
-                    .storeProperties(StreamUtil.openStream(getClass(), "properties/singleUseMockAccStore.properties"))
+                    .properties(StreamUtil.openStream(getClass(), "properties/singleUseMockAccStore.properties"))
                     .build());
         } catch (final StorageException e) {
             throw new StoreException(e.getMessage(), e);

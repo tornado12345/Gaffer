@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package uk.gov.gchq.gaffer.sketches.datasketches.cardinality.binaryoperator;
 import com.yahoo.sketches.hll.Union;
 
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.binaryoperator.KorypheBinaryOperator;
 
 /**
@@ -26,6 +27,7 @@ import uk.gov.gchq.koryphe.binaryoperator.KorypheBinaryOperator;
  * {@link Union#update(com.yahoo.sketches.hll.HllSketch)}.
  */
 @Since("1.0.0")
+@Summary("Aggregates HllUnions objects")
 public class HllUnionAggregator extends KorypheBinaryOperator<Union> {
 
     @Override

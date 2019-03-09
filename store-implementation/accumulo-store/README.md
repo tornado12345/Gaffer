@@ -1,4 +1,4 @@
-Copyright 2016-2018 Crown Copyright
+Copyright 2016-2019 Crown Copyright
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ Accumulo set up
 
 Gaffer has been extensively tested with Accumulo version 1.8.1. It is recommended to use this version, although it should work with any of the 1.8.* versions of Accumulo as well.
 
-For the purposes of unit testing and very small-scale ephemeral examples, Gaffer offers a [MockAccumuloStore](src/main/java/uk/gov/gchq/gaffer/accumulostore/MockAccumuloStore.java). This uses Accumulo's `MockInstance` to create an in-memory Accumulo store that runs within the same JVM as the client code. All data in this store will disappear when the JVM is shut down.
+For the purposes of unit testing and very small-scale ephemeral examples, Gaffer offers a [MockAccumuloStore](https://gchq.github.io/gaffer-doc/javadoc/gaffer/uk/gov/gchq/gaffer/accumulostore/MockAccumuloStore.html). This uses Accumulo's `MockInstance` to create an in-memory Accumulo store that runs within the same JVM as the client code. All data in this store will disappear when the JVM is shut down.
 
 Gaffer can also be used with a `MiniAccumuloCluster`. This is an Accumulo cluster that runs in one JVM. To set up a `MiniAccumuloCluster` with Gaffer support, see the [mini-accumulo-cluster](https://github.com/gchq/gaffer-tools/tree/master/mini-accumulo-cluster) project in the Gaffer tools repository.
 
@@ -512,6 +512,7 @@ Ensure that the Accumulo user specified by the `accumulo.user` property has the 
 | vis1              | [VisibilityIT](../../integration-test/src/test/java/uk/gov/gchq/gaffer/integration/impl/VisibilityIT.java) |
 | vis2              | [VisibilityIT](../../integration-test/src/test/java/uk/gov/gchq/gaffer/integration/impl/VisibilityIT.java) |
 | public            | [SchemaHidingIT](../../core/graph/src/test/java/uk/gov/gchq/gaffer/integration/graph/SchemaHidingIT.java) |
+| private           | [ParameterizedLoaderIT](../../integration-test/src/test/java/uk/gov/gchq/gaffer/integration/impl/loader/ParameterizedLoaderIT.java#L63)
 | publicVisibility  | [AccumuloAggregationIT](src/test/java/uk/gov/gchq/gaffer/accumulostore/integration/AccumuloAggregationIT.java) |
 | privateVisibility | [AccumuloAggregationIT](src/test/java/uk/gov/gchq/gaffer/accumulostore/integration/AccumuloAggregationIT.java) |
 

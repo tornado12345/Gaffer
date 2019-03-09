@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,6 +150,14 @@ public interface OperationView {
 
             setView(builder.build());
         }
+    }
+
+    static boolean hasView(final Operation op) {
+        return op instanceof OperationView && hasView(((OperationView) op));
+    }
+
+    static boolean hasView(final OperationView op) {
+        return null != op && null != op.getView();
     }
 
     interface Builder<OP extends OperationView, B extends Builder<OP, ?>> extends Operation.Builder<OP, B> {

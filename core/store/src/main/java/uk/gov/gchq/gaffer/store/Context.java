@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ public class Context {
     private final String jobId;
     private final Map<String, Object> config;
     private OperationChain<?> originalOpChain;
+    private Map<String, Object> variables;
 
     /**
      * Map of exporter simple class name to exporter
@@ -66,6 +67,15 @@ public class Context {
         }
     }
 
+    /**
+     * Creates a clone of the current {@link Context} and returns it with a new job ID.
+     *
+     * @return cloned {@link Context}
+     */
+    public Context shallowClone() {
+        return new Context(this);
+    }
+
     private Context(final User user, final Map<String, Object> config) {
         if (null == user) {
             throw new IllegalArgumentException("User is required");
@@ -77,6 +87,7 @@ public class Context {
             this.config = config;
         }
         this.jobId = createJobId();
+        this.variables = new HashMap<>();
     }
 
     /**
@@ -111,6 +122,34 @@ public class Context {
 
     public final String getJobId() {
         return jobId;
+    }
+
+    public Map<String, Object> getVariables() {
+        return variables;
+    }
+
+    public Object getVariable(final String key) {
+        return variables.get(key);
+    }
+
+    public void setVariables(final Map<String, Object> variables) {
+        this.variables = variables;
+    }
+
+    public void setVariable(final String key, final Object value) {
+        if (null != variables) {
+            this.variables.put(key, value);
+        } else {
+            setVariables(Collections.singletonMap(key, value));
+        }
+    }
+
+    public void addVariables(final Map<String, Object> variables) {
+        if (null != variables) {
+            this.variables.putAll(variables);
+        } else {
+            setVariables(variables);
+        }
     }
 
     public Collection<Exporter> getExporters() {
@@ -182,6 +221,7 @@ public class Context {
                 .append(originalOpChain, context.originalOpChain)
                 .append(exporters, context.exporters)
                 .append(config, context.config)
+                .append(variables, context.variables)
                 .isEquals();
     }
 
@@ -193,6 +233,7 @@ public class Context {
                 .append(originalOpChain)
                 .append(exporters)
                 .append(config)
+                .append(variables)
                 .toHashCode();
     }
 
@@ -204,6 +245,7 @@ public class Context {
                 .append("originalOpChain", originalOpChain)
                 .append("exporters", exporters)
                 .append("config", config)
+                .append("variables", variables)
                 .toString();
     }
 
@@ -214,6 +256,7 @@ public class Context {
     public static class Builder {
         private User user = new User();
         private final Map<String, Object> config = new HashMap<>();
+        private final Map<String, Object> variables = new HashMap<>();
         private String jobId;
 
         public Builder user(final User user) {
@@ -236,6 +279,16 @@ public class Context {
 
         public Builder config(final String key, final Object value) {
             this.config.put(key, value);
+            return this;
+        }
+
+        public Builder variables(final Map<String, Object> variables) {
+            this.variables.putAll(variables);
+            return this;
+        }
+
+        public Builder variable(final String key, final Object value) {
+            this.variables.put(key, value);
             return this;
         }
 

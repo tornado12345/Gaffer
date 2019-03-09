@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,12 @@
 
 package uk.gov.gchq.gaffer.commonutil;
 
+/**
+ * Test schema types for use in Gaffer test classes.
+ *
+ * @deprecated Please use the equivalent TestTypes class in the store module
+ */
+@Deprecated
 public class TestTypes {
     public static final String TIMESTAMP = "timestamp";
     public static final String TIMESTAMP_2 = "timestamp2";
@@ -25,6 +31,7 @@ public class TestTypes {
     public static final String DIRECTED_TRUE = "directed.true";
     public static final String PROP_STRING = "prop.string";
     public static final String PROP_INTEGER = "prop.integer";
+    public static final String PROP_LONG = "prop.long";
     public static final String PROP_INTEGER_2 = "prop.integer.2";
     public static final String PROP_COUNT = "prop.count";
     public static final String PROP_MAP = "prop.map";

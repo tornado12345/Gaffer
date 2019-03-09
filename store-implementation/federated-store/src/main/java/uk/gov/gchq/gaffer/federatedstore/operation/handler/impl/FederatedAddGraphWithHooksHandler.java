@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Crown Copyright
+ * Copyright 2018-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package uk.gov.gchq.gaffer.federatedstore.operation.handler.impl;
 
 import uk.gov.gchq.gaffer.federatedstore.operation.AddGraphWithHooks;
 import uk.gov.gchq.gaffer.federatedstore.operation.handler.FederatedAddGraphHandlerParent;
-import uk.gov.gchq.gaffer.graph.Graph;
+import uk.gov.gchq.gaffer.graph.GraphSerialisable;
 import uk.gov.gchq.gaffer.operation.export.graph.handler.GraphDelegate;
 import uk.gov.gchq.gaffer.store.Store;
 
@@ -30,12 +30,15 @@ import uk.gov.gchq.gaffer.store.Store;
  */
 public class FederatedAddGraphWithHooksHandler extends FederatedAddGraphHandlerParent<AddGraphWithHooks> {
     @Override
-    protected Graph _makeGraph(final AddGraphWithHooks operation, final Store store) {
-        final Graph graph;
-        graph = GraphDelegate.createGraph(store, operation.getGraphId(),
-                operation.getSchema(), operation.getStoreProperties(),
-                operation.getParentSchemaIds(), operation.getParentPropertiesId(),
-                operation.getHooks());
-        return graph;
+    protected GraphSerialisable _makeGraph(final AddGraphWithHooks operation, final Store store) {
+        return new GraphDelegate.Builder()
+                .store(store)
+                .graphId(operation.getGraphId())
+                .schema(operation.getSchema())
+                .storeProperties(operation.getStoreProperties())
+                .hooks(operation.getHooks())
+                .parentSchemaIds(operation.getParentSchemaIds())
+                .parentStorePropertiesId(operation.getParentPropertiesId())
+                .buildGraphSerialisable();
     }
 }

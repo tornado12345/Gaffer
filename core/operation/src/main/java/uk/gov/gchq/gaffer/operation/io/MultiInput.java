@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package uk.gov.gchq.gaffer.operation.io;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Iterables;
@@ -37,11 +38,19 @@ public interface MultiInput<I_ITEM> extends Input<Iterable<? extends I_ITEM>> {
         return null != getInput() ? Iterables.toArray(getInput(), Object.class) : null;
     }
 
+    @JsonIgnore
+    @Override
+    Iterable<? extends I_ITEM> getInput();
+
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "class")
     @JsonSetter("input")
     default void setInput(final I_ITEM[] input) {
         setInput(Lists.newArrayList(input));
     }
+
+    @JsonIgnore
+    @Override
+    void setInput(final Iterable<? extends I_ITEM> input);
 
     interface Builder<OP extends MultiInput<I_ITEM>, I_ITEM, B extends Builder<OP, I_ITEM, ?>>
             extends Input.Builder<OP, Iterable<? extends I_ITEM>, B> {

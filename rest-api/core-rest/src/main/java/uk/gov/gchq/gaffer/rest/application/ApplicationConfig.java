@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import uk.gov.gchq.gaffer.rest.mapper.GafferCheckedExceptionMapper;
 import uk.gov.gchq.gaffer.rest.mapper.GafferRuntimeExceptionMapper;
 import uk.gov.gchq.gaffer.rest.mapper.GenericExceptionMapper;
 import uk.gov.gchq.gaffer.rest.mapper.ProcessingExceptionMapper;
+import uk.gov.gchq.gaffer.rest.mapper.UnauthorisedExceptionMapper;
 import uk.gov.gchq.gaffer.rest.mapper.WebApplicationExceptionMapper;
 import uk.gov.gchq.gaffer.rest.serialisation.RestJsonProvider;
 import uk.gov.gchq.gaffer.rest.serialisation.TextMessageBodyWriter;
@@ -56,6 +57,7 @@ public abstract class ApplicationConfig extends ResourceConfig {
     }
 
     protected void addExceptionMappers() {
+        resources.add(UnauthorisedExceptionMapper.class);
         resources.add(GafferCheckedExceptionMapper.class);
         resources.add(GafferRuntimeExceptionMapper.class);
         resources.add(ProcessingExceptionMapper.class);

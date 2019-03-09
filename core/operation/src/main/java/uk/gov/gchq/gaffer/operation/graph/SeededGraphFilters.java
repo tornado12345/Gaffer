@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package uk.gov.gchq.gaffer.operation.graph;
+
+import uk.gov.gchq.koryphe.Summary;
 
 /**
  * A {@code SeededGraphFilters} operation is a {@link GraphFilters} operation with
@@ -42,6 +44,7 @@ public interface SeededGraphFilters extends GraphFilters {
      * direction of the {@link uk.gov.gchq.gaffer.data.element.Edge}s during
      * the operation.
      */
+    @Summary("Should the edges point towards, or away from your seeds")
     enum IncludeIncomingOutgoingType {
         EITHER, INCOMING, OUTGOING
     }

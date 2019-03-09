@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreConstants.getSkipF
  * @see uk.gov.gchq.gaffer.store.operation.handler.OutputOperationHandler
  */
 public abstract class FederatedOperationOutputHandler<OP extends Output<O>, O> implements OutputOperationHandler<OP, O> {
+
     @Override
     public O doOperation(final OP operation, final Context context, final Store store) throws OperationException {
         final Collection<Graph> graphs = ((FederatedStore) store).getGraphs(context.getUser(), operation.getOption(KEY_OPERATION_OPTIONS_GRAPH_IDS));

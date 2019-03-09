@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package uk.gov.gchq.gaffer.data.element;
 
+import uk.gov.gchq.koryphe.Summary;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +25,7 @@ import java.util.Map;
  * The {@code IdentifierType} enum contains the identifier types used for {@link uk.gov.gchq.gaffer.data.element.Entity}s and
  * {@link uk.gov.gchq.gaffer.data.element.Edge}s.
  */
+@Summary("An identifier of an Entity or Edge")
 public enum IdentifierType {
     // Entity identifier type
     /**
@@ -54,7 +57,12 @@ public enum IdentifierType {
     /**
      * The vertex adjacent to Edge's matched vertex (defaults to DESTINATION).
      */
-    ADJACENT_MATCHED_VERTEX;
+    ADJACENT_MATCHED_VERTEX,
+
+    /**
+     * The element Group.
+     */
+    GROUP;
 
     private static final Map<String, IdentifierType> VALUES = new HashMap<>(values().length);
 

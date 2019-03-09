@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -282,10 +282,10 @@ public class DefaultScoreResolverTest {
         final Map<Class<? extends Operation>, ScoreResolver> resolvers = new HashMap<>();
 
         final ScoreResolver mockResolver = mock(NamedOperationScoreResolver.class);
-        final ScoreResolver mockResolver1 = mock(NamedOperationScoreResolver.class);
+        final ScoreResolver mockResolver1 = mock(DefaultScoreResolver.class);
 
-        final GetElements op1 = mock(GetElements.class);
-        final AddElements op2 = mock(AddElements.class);
+        final GetElements op1 = new GetElements();
+        final AddElements op2 = new AddElements();
         final Map<Class<? extends Operation>, Integer> opScores = new LinkedHashMap<>();
         opScores.put(GetElements.class, 2);
 

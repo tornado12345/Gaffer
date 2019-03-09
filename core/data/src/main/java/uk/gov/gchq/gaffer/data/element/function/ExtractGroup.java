@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package uk.gov.gchq.gaffer.data.element.function;
 
 import uk.gov.gchq.gaffer.data.element.Element;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.function.KorypheFunction;
 
 /**
@@ -25,6 +26,7 @@ import uk.gov.gchq.koryphe.function.KorypheFunction;
  * If the Element is null, this function will return null.
  */
 @Since("1.4.0")
+@Summary("Extracts a group from an element")
 public class ExtractGroup extends KorypheFunction<Element, String> {
     @Override
     public String apply(final Element element) {

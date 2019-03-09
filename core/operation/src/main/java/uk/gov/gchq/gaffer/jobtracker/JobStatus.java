@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,12 @@
  */
 package uk.gov.gchq.gaffer.jobtracker;
 
+import uk.gov.gchq.koryphe.Summary;
+
 /**
  * Denotes the status of a Gaffer job.
  */
+@Summary("The status of a job")
 public enum JobStatus {
 
     /**

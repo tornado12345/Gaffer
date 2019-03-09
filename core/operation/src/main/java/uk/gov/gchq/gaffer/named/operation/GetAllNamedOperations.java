@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import uk.gov.gchq.gaffer.commonutil.iterable.CloseableIterable;
 import uk.gov.gchq.gaffer.named.operation.serialisation.NamedOperationTypeReference;
 import uk.gov.gchq.gaffer.operation.io.Output;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 import java.util.Map;
 
@@ -32,6 +33,7 @@ import java.util.Map;
  */
 @JsonPropertyOrder(value = {"class"}, alphabetic = true)
 @Since("1.0.0")
+@Summary("Gets all available named operations")
 public class GetAllNamedOperations implements
         Output<CloseableIterable<NamedOperationDetail>> {
     private Map<String, String> options;

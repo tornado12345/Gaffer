@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,6 +167,8 @@ public class Edge extends Element implements EdgeId {
     @Override
     public Object getIdentifier(final IdentifierType identifierType) {
         switch (identifierType) {
+            case GROUP:
+                return getGroup();
             case SOURCE:
                 return getSource();
             case DESTINATION:
@@ -192,6 +194,9 @@ public class Edge extends Element implements EdgeId {
     @Override
     void putIdentifier(final IdentifierType identifierType, final Object value) {
         switch (identifierType) {
+            case GROUP:
+                setGroup((String) value);
+                break;
             case SOURCE:
             case MATCHED_VERTEX:
                 source = value;
@@ -353,6 +358,11 @@ public class Edge extends Element implements EdgeId {
                 getMatchedVertex(),
                 new Properties()
         );
+    }
+
+    @Override
+    public Edge shallowClone() {
+        return (Edge) super.shallowClone();
     }
 
     @Override

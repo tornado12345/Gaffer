@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 package uk.gov.gchq.gaffer.data.element.id;
 
+import uk.gov.gchq.koryphe.Summary;
+
 /**
  * A {@code DirectedType} defines whether edges should be
  * directed, undirected or either/both.
  */
+@Summary("Is the Edge directed?")
 public enum DirectedType {
     /**
      * Edges are either DIRECTED or UNDIRECTED. This is the default value.

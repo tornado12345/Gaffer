@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,6 @@ public class AddElementsFromKafkaTest extends OperationTest<AddElementsFromKafka
                         "  \"groupId\" : \"groupId\",%n" +
                         "  \"bootstrapServers\" : [ \"server1\", \"server2\" ],%n" +
                         "  \"parallelism\" : 2,%n" +
-                        "  \"validate\" : true,%n" +
-                        "  \"skipInvalidElements\" : false,%n" +
                         "  \"elementGenerator\" : \"uk.gov.gchq.gaffer.generator.TestGeneratorImpl\"%n" +
                         "}").getBytes(),
                 json);

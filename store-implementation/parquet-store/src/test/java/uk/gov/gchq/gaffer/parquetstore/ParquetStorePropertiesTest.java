@@ -1,5 +1,5 @@
 /*
- * Copyright 2017. Crown Copyright
+ * Copyright 2017-2018. Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,13 @@
 package uk.gov.gchq.gaffer.parquetstore;
 
 import com.fasterxml.jackson.databind.Module;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.junit.rules.TemporaryFolder;
+import uk.gov.gchq.gaffer.commonutil.CommonTestConstants;
 import uk.gov.gchq.gaffer.jsonserialisation.JSONSerialiserModules;
 import uk.gov.gchq.gaffer.sketches.serialisation.json.SketchesJsonModules;
 
@@ -28,10 +32,13 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class ParquetStorePropertiesTest {
+    @Rule
+    public final TemporaryFolder testFolder = new TemporaryFolder(CommonTestConstants.TMP_DIRECTORY);
+
     private ParquetStoreProperties props;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         props = new ParquetStoreProperties();
     }
 
@@ -44,14 +51,14 @@ public class ParquetStorePropertiesTest {
 
     @Test
     public void dataDirTest() {
-        assertEquals("parquet_data", props.getDataDir());
+        assertEquals(null, props.getDataDir());
         props.setDataDir("Test");
         assertEquals("Test", props.getDataDir());
     }
 
     @Test
     public void tempFilesDirTest() {
-        assertEquals(".gaffer/temp_parquet_data", props.getTempFilesDir());
+        assertEquals(null, props.getTempFilesDir());
         props.setTempFilesDir("Test");
         assertEquals("Test", props.getTempFilesDir());
     }
@@ -104,6 +111,17 @@ public class ParquetStorePropertiesTest {
         assertEquals("local[*]", props.getSparkMaster());
         props.setSparkMaster("Test");
         assertEquals("Test", props.getSparkMaster());
+    }
+
+    @Test
+    public void compressionTest() {
+        assertEquals(CompressionCodecName.GZIP, props.getCompressionCodecName());
+        props.setCompressionCodecName(CompressionCodecName.SNAPPY.name());
+        assertEquals(CompressionCodecName.SNAPPY, props.getCompressionCodecName());
+        props.setCompressionCodecName(CompressionCodecName.LZO.name());
+        assertEquals(CompressionCodecName.LZO, props.getCompressionCodecName());
+        props.setCompressionCodecName(CompressionCodecName.UNCOMPRESSED.name());
+        assertEquals(CompressionCodecName.UNCOMPRESSED, props.getCompressionCodecName());
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,14 @@ import uk.gov.gchq.gaffer.commonutil.Required;
 import uk.gov.gchq.gaffer.operation.Operation;
 import uk.gov.gchq.gaffer.operation.data.CustomVertex;
 import uk.gov.gchq.gaffer.operation.io.MultiInput;
+import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 import java.util.Date;
 import java.util.Map;
 
+@Since("1.0.0")
+@Summary("Input Implementation for testing")
 @JsonPropertyOrder(alphabetic = true)
 public class InputImpl implements MultiInput<String> {
     @Required

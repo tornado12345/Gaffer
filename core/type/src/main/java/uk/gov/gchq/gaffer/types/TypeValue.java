@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package uk.gov.gchq.gaffer.types;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import uk.gov.gchq.gaffer.commonutil.StringUtil;
 import uk.gov.gchq.gaffer.commonutil.ToStringBuilder;
 import uk.gov.gchq.koryphe.serialisation.json.JsonSimpleClassName;
 
@@ -76,16 +77,16 @@ public class TypeValue implements Comparable<TypeValue>, Serializable {
         final TypeValue typeValue = (TypeValue) obj;
 
         return new EqualsBuilder()
-                .append(type, typeValue.type)
-                .append(value, typeValue.value)
+                .append(StringUtil.nullIfEmpty(type), StringUtil.nullIfEmpty(typeValue.type))
+                .append(StringUtil.nullIfEmpty(value), StringUtil.nullIfEmpty(typeValue.value))
                 .isEquals();
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 89)
-                .append(type)
-                .append(value)
+                .append(StringUtil.nullIfEmpty(type))
+                .append(StringUtil.nullIfEmpty(value))
                 .toHashCode();
     }
 

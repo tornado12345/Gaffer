@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,15 @@ public class RestApiV1TestClient extends RestApiTestClient {
                 .path("/graph/doOperation/chunked/operation")
                 .request()
                 .post(Entity.entity(JSONSerialiser.serialise(operation), APPLICATION_JSON_TYPE));
+    }
+
+    @Override
+    public Response getOperationDetails(final Class clazz) throws IOException {
+        startServer();
+        return client.target(uriString)
+                .path("/graph/operations/" + clazz.getCanonicalName())
+                .request()
+                .get(Response.class);
     }
 
     @Override

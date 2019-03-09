@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
+import uk.gov.gchq.koryphe.Summary;
+
 /**
  * An {@code EdgeId} is an interface describing the core methods that are required
  * in order to identify an {@link uk.gov.gchq.gaffer.data.element.Edge}.
@@ -33,6 +35,7 @@ public interface EdgeId extends ElementId {
      * Enumerated type to denote which vertex of an {@link uk.gov.gchq.gaffer.data.element.Edge}
      * matches an input parameter.
      */
+    @Summary("Did your seed match the source or the destination of the Edge?")
     enum MatchedVertex {
         SOURCE,
         DESTINATION;

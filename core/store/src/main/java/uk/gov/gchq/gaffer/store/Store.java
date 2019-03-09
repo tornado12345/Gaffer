@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import uk.gov.gchq.gaffer.cache.CacheServiceLoader;
 import uk.gov.gchq.gaffer.commonutil.CloseableUtil;
+import uk.gov.gchq.gaffer.commonutil.ExecutorService;
 import uk.gov.gchq.gaffer.commonutil.iterable.CloseableIterable;
 import uk.gov.gchq.gaffer.data.element.Element;
 import uk.gov.gchq.gaffer.data.element.IdentifierType;
@@ -45,10 +46,17 @@ import uk.gov.gchq.gaffer.operation.OperationException;
 import uk.gov.gchq.gaffer.operation.impl.Count;
 import uk.gov.gchq.gaffer.operation.impl.CountGroups;
 import uk.gov.gchq.gaffer.operation.impl.DiscardOutput;
+import uk.gov.gchq.gaffer.operation.impl.ForEach;
+import uk.gov.gchq.gaffer.operation.impl.GetVariable;
+import uk.gov.gchq.gaffer.operation.impl.GetVariables;
 import uk.gov.gchq.gaffer.operation.impl.GetWalks;
 import uk.gov.gchq.gaffer.operation.impl.If;
 import uk.gov.gchq.gaffer.operation.impl.Limit;
+import uk.gov.gchq.gaffer.operation.impl.Reduce;
+import uk.gov.gchq.gaffer.operation.impl.SetVariable;
 import uk.gov.gchq.gaffer.operation.impl.Validate;
+import uk.gov.gchq.gaffer.operation.impl.ValidateOperationChain;
+import uk.gov.gchq.gaffer.operation.impl.While;
 import uk.gov.gchq.gaffer.operation.impl.add.AddElements;
 import uk.gov.gchq.gaffer.operation.impl.compare.Max;
 import uk.gov.gchq.gaffer.operation.impl.compare.Min;
@@ -68,27 +76,39 @@ import uk.gov.gchq.gaffer.operation.impl.get.GetElements;
 import uk.gov.gchq.gaffer.operation.impl.job.GetAllJobDetails;
 import uk.gov.gchq.gaffer.operation.impl.job.GetJobDetails;
 import uk.gov.gchq.gaffer.operation.impl.job.GetJobResults;
+import uk.gov.gchq.gaffer.operation.impl.join.Join;
 import uk.gov.gchq.gaffer.operation.impl.output.ToArray;
 import uk.gov.gchq.gaffer.operation.impl.output.ToCsv;
 import uk.gov.gchq.gaffer.operation.impl.output.ToEntitySeeds;
 import uk.gov.gchq.gaffer.operation.impl.output.ToList;
 import uk.gov.gchq.gaffer.operation.impl.output.ToMap;
 import uk.gov.gchq.gaffer.operation.impl.output.ToSet;
+import uk.gov.gchq.gaffer.operation.impl.output.ToSingletonList;
 import uk.gov.gchq.gaffer.operation.impl.output.ToStream;
 import uk.gov.gchq.gaffer.operation.impl.output.ToVertices;
 import uk.gov.gchq.gaffer.operation.io.Input;
 import uk.gov.gchq.gaffer.operation.io.Output;
 import uk.gov.gchq.gaffer.serialisation.Serialiser;
 import uk.gov.gchq.gaffer.store.library.GraphLibrary;
+import uk.gov.gchq.gaffer.store.library.NoGraphLibrary;
 import uk.gov.gchq.gaffer.store.operation.GetSchema;
+import uk.gov.gchq.gaffer.store.operation.GetTraits;
 import uk.gov.gchq.gaffer.store.operation.OperationChainValidator;
 import uk.gov.gchq.gaffer.store.operation.OperationUtil;
+import uk.gov.gchq.gaffer.store.operation.add.AddSchemaToLibrary;
+import uk.gov.gchq.gaffer.store.operation.add.AddStorePropertiesToLibrary;
 import uk.gov.gchq.gaffer.store.operation.declaration.OperationDeclaration;
 import uk.gov.gchq.gaffer.store.operation.declaration.OperationDeclarations;
+import uk.gov.gchq.gaffer.store.operation.handler.AddSchemaToLibraryHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.AddStorePropertiesToLibraryHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.CountGroupsHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.CountHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.DiscardOutputHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.ForEachHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.GetSchemaHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.GetTraitsHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.GetVariableHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.GetVariablesHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.GetWalksHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.IfHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.LimitHandler;
@@ -96,7 +116,11 @@ import uk.gov.gchq.gaffer.store.operation.handler.MapHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.OperationChainHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.OperationHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.OutputOperationHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.ReduceHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.SetVariableHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.ValidateHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.ValidateOperationChainHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.WhileHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.compare.MaxHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.compare.MinHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.compare.SortHandler;
@@ -111,6 +135,7 @@ import uk.gov.gchq.gaffer.store.operation.handler.generate.GenerateObjectsHandle
 import uk.gov.gchq.gaffer.store.operation.handler.job.GetAllJobDetailsHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.job.GetJobDetailsHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.job.GetJobResultsHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.join.JoinHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.named.AddNamedOperationHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.named.AddNamedViewHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.named.DeleteNamedOperationHandler;
@@ -124,6 +149,7 @@ import uk.gov.gchq.gaffer.store.operation.handler.output.ToEntitySeedsHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.output.ToListHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.output.ToMapHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.output.ToSetHandler;
+import uk.gov.gchq.gaffer.store.operation.handler.output.ToSingletonListHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.output.ToStreamHandler;
 import uk.gov.gchq.gaffer.store.operation.handler.output.ToVerticesHandler;
 import uk.gov.gchq.gaffer.store.optimiser.OperationChainOptimiser;
@@ -144,8 +170,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A {@code Store} backs a Graph and is responsible for storing the {@link
@@ -165,6 +190,8 @@ public abstract class Store {
     protected final List<OperationChainOptimiser> opChainOptimisers = new ArrayList<>();
     protected final OperationChainValidator opChainValidator;
     private final SchemaOptimiser schemaOptimiser;
+    private final Boolean addCoreOpHandlers;
+
     /**
      * The schema - contains the type of {@link uk.gov.gchq.gaffer.data.element.Element}s
      * to be stored and how to aggregate the elements.
@@ -185,10 +212,14 @@ public abstract class Store {
     private GraphLibrary library;
 
     private JobTracker jobTracker;
-    private ExecutorService executorService;
     private String graphId;
 
     public Store() {
+        this(true);
+    }
+
+    public Store(final Boolean addCoreOpHandlers) {
+        this.addCoreOpHandlers = addCoreOpHandlers;
         this.requiredParentSerialiserClass = getRequiredParentSerialiserClass();
         this.opChainValidator = createOperationChainValidator();
         this.schemaOptimiser = createSchemaOptimiser();
@@ -242,12 +273,16 @@ public abstract class Store {
         optimiseSchema();
         validateSchemas();
         addOpHandlers();
-        addExecutorService();
+        addExecutorService(properties);
     }
 
     public static void updateJsonSerialiser(final StoreProperties storeProperties) {
         if (null != storeProperties) {
-            JSONSerialiser.update(storeProperties.getJsonSerialiserClass(), storeProperties.getJsonSerialiserModules());
+            JSONSerialiser.update(
+                    storeProperties.getJsonSerialiserClass(),
+                    storeProperties.getJsonSerialiserModules(),
+                    storeProperties.getStrictJson()
+            );
         } else {
             JSONSerialiser.update();
         }
@@ -352,7 +387,7 @@ public abstract class Store {
 
         final JobDetail initialJobDetail = addOrUpdateJobDetail(operationChain, context, null, JobStatus.RUNNING);
 
-        final Runnable runnable = () -> {
+        runAsync(() -> {
             try {
                 handleOperation(operationChain, context);
                 addOrUpdateJobDetail(operationChain, context, null, JobStatus.FINISHED);
@@ -363,15 +398,18 @@ public abstract class Store {
                 LOGGER.warn("Operation chain job failed to execute", e);
                 addOrUpdateJobDetail(operationChain, context, e.getMessage(), JobStatus.FAILED);
             }
-        };
-
-        executorService.execute(runnable);
+        });
 
         return initialJobDetail;
     }
 
     public void runAsync(final Runnable runnable) {
-        executorService.execute(runnable);
+        getExecutorService().execute(runnable);
+    }
+
+    protected ScheduledExecutorService getExecutorService() {
+        return (null != ExecutorService.getService() && ExecutorService.isEnabled()) ?
+                ExecutorService.getService() : null;
     }
 
     public JobTracker getJobTracker() {
@@ -617,6 +655,10 @@ public abstract class Store {
         return new OperationChainValidator(new ViewValidator());
     }
 
+    public OperationChainValidator getOperationChainValidator() {
+        return opChainValidator;
+    }
+
     public void addOperationChainOptimisers(final List<OperationChainOptimiser> newOpChainOptimisers) {
         opChainOptimisers.addAll(newOpChainOptimisers);
     }
@@ -716,7 +758,7 @@ public abstract class Store {
         }
     }
 
-    protected OperationHandler<Operation> getOperationHandler(final Class<? extends Operation> opClass) {
+    public OperationHandler<Operation> getOperationHandler(final Class<? extends Operation> opClass) {
         return operationHandlers.get(opClass);
     }
 
@@ -739,8 +781,7 @@ public abstract class Store {
 
     public Object handleOperation(final Operation operation, final Context context) throws
             OperationException {
-        final OperationHandler<Operation> handler = getOperationHandler(
-                operation.getClass());
+        final OperationHandler<Operation> handler = getOperationHandler(operation.getClass());
         Object result;
         try {
             if (null != handler) {
@@ -760,18 +801,14 @@ public abstract class Store {
         return result;
     }
 
-    private void addExecutorService() {
-        final Integer jobExecutorThreadCount = getProperties().getJobExecutorThreadCount();
-        LOGGER.debug("Initialising ExecutorService with " + jobExecutorThreadCount + " threads");
-        this.executorService = Executors.newFixedThreadPool(jobExecutorThreadCount, runnable -> {
-            final Thread thread = new Thread(runnable);
-            thread.setDaemon(true);
-            return thread;
-        });
+    private void addExecutorService(final StoreProperties properties) {
+        ExecutorService.initialise(properties.getJobExecutorThreadCount());
     }
 
     private void addOpHandlers() {
-        addCoreOpHandlers();
+        if (addCoreOpHandlers) {
+            addCoreOpHandlers();
+        }
         addAdditionalOperationHandlers();
         addConfiguredOperationHandlers();
     }
@@ -833,6 +870,9 @@ public abstract class Store {
         addOperationHandler(OperationChain.class, getOperationChainHandler());
         addOperationHandler(OperationChainDAO.class, getOperationChainHandler());
 
+        // OperationChain validation
+        addOperationHandler(ValidateOperationChain.class, new ValidateOperationChainHandler());
+
         // Walk tracking
         addOperationHandler(GetWalks.class, new GetWalksHandler());
 
@@ -847,11 +887,29 @@ public abstract class Store {
         addOperationHandler(GetSchema.class, new GetSchemaHandler());
         addOperationHandler(uk.gov.gchq.gaffer.operation.impl.Map.class, new MapHandler());
         addOperationHandler(If.class, new IfHandler());
+        addOperationHandler(While.class, new WhileHandler());
+        addOperationHandler(ForEach.class, new ForEachHandler());
+        addOperationHandler(ToSingletonList.class, new ToSingletonListHandler());
+        addOperationHandler(Reduce.class, new ReduceHandler());
+        addOperationHandler(Join.class, new JoinHandler());
+
+        // Context variables
+        addOperationHandler(SetVariable.class, new SetVariableHandler());
+        addOperationHandler(GetVariable.class, new GetVariableHandler());
+        addOperationHandler(GetVariables.class, new GetVariablesHandler());
 
         // Function
         addOperationHandler(Filter.class, new FilterHandler());
         addOperationHandler(Transform.class, new TransformHandler());
         addOperationHandler(Aggregate.class, new AggregateHandler());
+
+        // GraphLibrary Adds
+        if (null != getGraphLibrary() && !(getGraphLibrary() instanceof NoGraphLibrary)) {
+            addOperationHandler(AddSchemaToLibrary.class, new AddSchemaToLibraryHandler());
+            addOperationHandler(AddStorePropertiesToLibrary.class, new AddStorePropertiesToLibraryHandler());
+        }
+
+        addOperationHandler(GetTraits.class, new GetTraitsHandler());
     }
 
     private void addConfiguredOperationHandlers() {

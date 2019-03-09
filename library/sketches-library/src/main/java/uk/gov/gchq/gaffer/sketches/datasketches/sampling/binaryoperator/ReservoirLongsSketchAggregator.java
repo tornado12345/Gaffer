@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.yahoo.sketches.sampling.ReservoirLongsSketch;
 import com.yahoo.sketches.sampling.ReservoirLongsUnion;
 
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.binaryoperator.KorypheBinaryOperator;
 
 /**
@@ -26,6 +27,7 @@ import uk.gov.gchq.koryphe.binaryoperator.KorypheBinaryOperator;
  * {@link ReservoirLongsSketch}s using a {@link ReservoirLongsUnion}.
  */
 @Since("1.0.0")
+@Summary("Aggregates ReservoirLongsSketches using ReservoirLongsUnion")
 public class ReservoirLongsSketchAggregator extends KorypheBinaryOperator<ReservoirLongsSketch> {
 
     @Override

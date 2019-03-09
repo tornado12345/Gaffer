@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,15 @@ package uk.gov.gchq.gaffer.store;
 
 import com.google.common.collect.Sets;
 
+import uk.gov.gchq.koryphe.Summary;
+
 import java.util.Collections;
 import java.util.Set;
 
 /**
  * A {@code StoreTrait} defines functionality for {@link uk.gov.gchq.gaffer.store.Store} implementations.
  */
+@Summary("The features of the Gaffer store - i.e does it support query aggregation?")
 public enum StoreTrait {
     /**
      * Similar {@link uk.gov.gchq.gaffer.data.element.Element}s are aggregated/merged together based on the groupBy logic in the schema at ingest.

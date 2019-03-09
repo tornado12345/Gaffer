@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Crown Copyright
+ * Copyright 2018-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static uk.gov.gchq.gaffer.federatedstore.FederatedGraphStorage.USER_IS_ATTEMPTING_TO_OVERWRITE;
-import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreUser.authUser;
-import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreUser.testUser;
+import static uk.gov.gchq.gaffer.user.StoreUser.authUser;
+import static uk.gov.gchq.gaffer.user.StoreUser.testUser;
 
 public class FederatedAddGraphWithHooksHandlerTest {
     private static final String FEDERATEDSTORE_GRAPH_ID = "federatedStore";
@@ -253,35 +253,6 @@ public class FederatedAddGraphWithHooksHandlerTest {
         } catch (final Exception e) {
             assertTrue(e.getMessage().contains(String.format(USER_IS_ATTEMPTING_TO_OVERWRITE, EXPECTED_GRAPH_ID)));
         }
-    }
-
-    @Test
-    public void shouldNotThrowWhenOverwriteGraphIsSame() throws Exception {
-        Schema expectedSchema = new Schema.Builder().build();
-
-        assertEquals(0, store.getGraphs(testUser, null).size());
-
-        store.initialise(FEDERATEDSTORE_GRAPH_ID, new Schema(), federatedStoreProperties);
-
-        FederatedAddGraphWithHooksHandler federatedAddGraphWithHooksHandler = new FederatedAddGraphWithHooksHandler();
-
-        federatedAddGraphWithHooksHandler.doOperation(
-                new AddGraphWithHooks.Builder()
-                        .graphId(EXPECTED_GRAPH_ID)
-                        .schema(expectedSchema)
-                        .storeProperties(storeProperties)
-                        .build(),
-                new Context(testUser),
-                store);
-
-        federatedAddGraphWithHooksHandler.doOperation(
-                new AddGraphWithHooks.Builder()
-                        .graphId(EXPECTED_GRAPH_ID)
-                        .schema(expectedSchema)
-                        .storeProperties(storeProperties)
-                        .build(),
-                new Context(testUser),
-                store);
     }
 
     @Test

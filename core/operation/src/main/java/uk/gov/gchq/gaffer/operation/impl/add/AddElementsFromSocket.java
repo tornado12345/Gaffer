@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import uk.gov.gchq.gaffer.data.element.Element;
 import uk.gov.gchq.gaffer.operation.Operation;
 import uk.gov.gchq.gaffer.operation.Validatable;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -39,6 +40,7 @@ import java.util.function.Function;
  */
 @JsonPropertyOrder(value = {"class", "hostname", "port", "elementGenerator"}, alphabetic = true)
 @Since("1.0.0")
+@Summary("Adds elements from a socket")
 public class AddElementsFromSocket implements
         Operation,
         Validatable {

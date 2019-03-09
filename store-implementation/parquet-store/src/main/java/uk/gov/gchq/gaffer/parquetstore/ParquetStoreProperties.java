@@ -1,5 +1,5 @@
 /*
- * Copyright 2017. Crown Copyright
+ * Copyright 2017-2018. Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package uk.gov.gchq.gaffer.parquetstore;
 
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.spark.SparkConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +48,10 @@ public class ParquetStoreProperties extends StoreProperties implements Serializa
     public static final String PARQUET_ADD_ELEMENTS_OUTPUT_FILES_PER_GROUP = "parquet.add_elements.output_files_per_group";
     public static final String SPARK_MASTER = "spark.master";
     public static final String PARQUET_SKIP_VALIDATION = "parquet.skip_validation";
+    public static final String COMPRESSION_CODEC = "parquet.compression.codec";
 
-
-    // Default values
-    private static final String DATA_DIR_DEFAULT = "parquet_data";
-    private static final String TEMP_FILES_DIR_DEFAULT = ".gaffer/temp_parquet_data";
+    // Default values - NB No default values for DATA_DIR or TEMP_FILES_DIR to
+    // avoid the inadvertent storage of data in unexpected folders.
     private static final String PARQUET_ROW_GROUP_SIZE_IN_BYTES_DEFAULT = "4194304"; //4MB
     private static final String PARQUET_PAGE_SIZE_IN_BYTES_DEFAULT = "1048576"; //1MB
     public static final String PARQUET_AGGREGATE_ON_INGEST_DEFAULT = "true";
@@ -60,6 +61,7 @@ public class ParquetStoreProperties extends StoreProperties implements Serializa
     private static final String PARQUET_ADD_ELEMENTS_OUTPUT_FILES_PER_GROUP_DEFAULT = "10";
     private static final String SPARK_MASTER_DEFAULT = "local[*]";
     private static final String PARQUET_SKIP_VALIDATION_DEFAULT = "false";
+    private static final String COMPRESSION_CODEC_DEFAULT = "GZIP";
     private static final long serialVersionUID = 7695540336792378185L;
 
     public ParquetStoreProperties() {
@@ -83,7 +85,7 @@ public class ParquetStoreProperties extends StoreProperties implements Serializa
     }
 
     public String getDataDir() {
-        return get(DATA_DIR, DATA_DIR_DEFAULT);
+        return get(DATA_DIR);
     }
 
     public void setDataDir(final String dir) {
@@ -91,7 +93,7 @@ public class ParquetStoreProperties extends StoreProperties implements Serializa
     }
 
     public String getTempFilesDir() {
-        return get(TEMP_FILES_DIR, TEMP_FILES_DIR_DEFAULT);
+        return get(TEMP_FILES_DIR);
     }
 
     public void setTempFilesDir(final String dir) {
@@ -187,5 +189,20 @@ public class ParquetStoreProperties extends StoreProperties implements Serializa
 
     public void setSortBySplitsOnIngest(final boolean sortBySplits) {
         set(PARQUET_SORT_BY_SPLITS_ON_INGEST, String.valueOf(sortBySplits));
+    }
+
+    public CompressionCodecName getCompressionCodecName() throws IllegalArgumentException {
+        final String codec = get(COMPRESSION_CODEC, COMPRESSION_CODEC_DEFAULT);
+        if (!EnumUtils.isValidEnum(CompressionCodecName.class, codec)) {
+            throw new IllegalArgumentException("Unknown compression codec " + codec);
+        }
+        return CompressionCodecName.valueOf(codec);
+    }
+
+    public void setCompressionCodecName(final String codec) {
+        if (!EnumUtils.isValidEnum(CompressionCodecName.class, codec)) {
+            throw new IllegalArgumentException("Unknown compression codec " + codec);
+        }
+        set(COMPRESSION_CODEC, codec);
     }
 }

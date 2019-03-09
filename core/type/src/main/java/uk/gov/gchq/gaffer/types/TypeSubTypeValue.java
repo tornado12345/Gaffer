@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package uk.gov.gchq.gaffer.types;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import uk.gov.gchq.gaffer.commonutil.StringUtil;
 import uk.gov.gchq.gaffer.commonutil.ToStringBuilder;
 import uk.gov.gchq.koryphe.serialisation.json.JsonSimpleClassName;
 
@@ -75,9 +76,9 @@ public class TypeSubTypeValue implements Comparable<TypeSubTypeValue>, Serializa
     @Override
     public int hashCode() {
         return new HashCodeBuilder(13, 89)
-                .append(type)
-                .append(subType)
-                .append(value)
+                .append(StringUtil.nullIfEmpty(type))
+                .append(StringUtil.nullIfEmpty(subType))
+                .append(StringUtil.nullIfEmpty(value))
                 .toHashCode();
     }
 
@@ -94,9 +95,9 @@ public class TypeSubTypeValue implements Comparable<TypeSubTypeValue>, Serializa
         final TypeSubTypeValue tstv = (TypeSubTypeValue) object;
 
         return new EqualsBuilder()
-                .append(type, tstv.type)
-                .append(subType, tstv.subType)
-                .append(value, tstv.value)
+                .append(StringUtil.nullIfEmpty(type), StringUtil.nullIfEmpty(tstv.type))
+                .append(StringUtil.nullIfEmpty(subType), StringUtil.nullIfEmpty(tstv.subType))
+                .append(StringUtil.nullIfEmpty(value), StringUtil.nullIfEmpty(tstv.value))
                 .isEquals();
     }
 

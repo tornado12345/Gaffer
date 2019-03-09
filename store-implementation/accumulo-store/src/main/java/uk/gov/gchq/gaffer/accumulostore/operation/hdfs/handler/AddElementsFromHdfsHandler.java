@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ public class AddElementsFromHdfsHandler implements OperationHandler<AddElementsF
             throws OperationException {
         final ImportElementsToAccumuloTool importTool;
         final int response;
-        importTool = new ImportElementsToAccumuloTool(operation.getOutputPath(), operation.getFailurePath(), store);
+        importTool = new ImportElementsToAccumuloTool(operation.getOutputPath(), operation.getFailurePath(), store, operation.getOptions());
         try {
             LOGGER.info("Running import job");
             response = ToolRunner.run(importTool, new String[0]);

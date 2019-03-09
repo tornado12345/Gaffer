@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,6 +142,12 @@ public abstract class Element implements ElementId {
 
     @JsonIgnore
     public abstract Element emptyClone();
+
+    public Element shallowClone() {
+        final Element element = emptyClone();
+        element.setProperties(getProperties().clone());
+        return element;
+    }
 
     @JsonIgnore
     public abstract Object getIdentifier(final IdentifierType identifierType);

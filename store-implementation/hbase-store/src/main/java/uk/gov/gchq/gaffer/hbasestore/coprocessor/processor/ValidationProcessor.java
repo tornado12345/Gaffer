@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ import uk.gov.gchq.gaffer.hbasestore.serialisation.LazyElementCell;
 import uk.gov.gchq.gaffer.store.ElementValidator;
 import uk.gov.gchq.gaffer.store.schema.Schema;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 @Since("1.0.0")
+@Summary("Filters out invalid elements")
 public class ValidationProcessor extends FilterProcessor {
     private final ElementValidator validator;
 

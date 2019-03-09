@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -270,7 +270,7 @@ public class AddOperationsToChainTest extends GraphHookTest<AddOperationsToChain
             fromJson(nullTestJson.getBytes());
             fail("Exception expected");
         } catch (final RuntimeException e) {
-            assertTrue(e.getMessage().contains("Invalid type id 'null'"));
+            assertTrue(e.getMessage(), e.getMessage().contains("'null'"));
         }
     }
 
@@ -284,7 +284,7 @@ public class AddOperationsToChainTest extends GraphHookTest<AddOperationsToChain
             fromJson(emptyTestJson.getBytes());
             fail("Exception expected");
         } catch (final RuntimeException e) {
-            assertTrue(e.getMessage().contains("Invalid type id ''"));
+            assertTrue(e.getMessage(), e.getMessage().contains("''"));
         }
     }
 
@@ -298,7 +298,7 @@ public class AddOperationsToChainTest extends GraphHookTest<AddOperationsToChain
             fromJson(falseOperationTestJson.getBytes());
             fail("Exception expected");
         } catch (final RuntimeException e) {
-            assertTrue(e.getMessage().contains("Invalid type id 'this.Operation.Doesnt.Exist'"));
+            assertTrue(e.getMessage(), e.getMessage().contains("'this.Operation.Doesnt.Exist'"));
         }
     }
 

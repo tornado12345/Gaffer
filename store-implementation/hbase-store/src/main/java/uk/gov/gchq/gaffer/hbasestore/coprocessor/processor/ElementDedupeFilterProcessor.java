@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import uk.gov.gchq.gaffer.hbasestore.serialisation.ElementSerialisation;
 import uk.gov.gchq.gaffer.hbasestore.serialisation.LazyElementCell;
 import uk.gov.gchq.gaffer.hbasestore.utils.HBaseStoreConstants;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
 @Since("1.0.0")
+@Summary("Filters and deduplicates elements")
 public class ElementDedupeFilterProcessor extends FilterProcessor {
     // This element serialisation does not have the schema so not all methods can be used.
     private final ElementSerialisation elementSerialisation = new ElementSerialisation(null);

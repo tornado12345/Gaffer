@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,5 +164,15 @@ public final class StringUtil {
         }
 
         return classes;
+    }
+
+    /**
+     * Checks if a {@link String} is null or empty and returns null if true.
+     *
+     * @param string input {@link String}
+     * @return null if input {@link String} is null or empty otherwise returns the input {@link String}
+     */
+    public static String nullIfEmpty(final String string) {
+        return null != string && string.isEmpty() ? null : string;
     }
 }

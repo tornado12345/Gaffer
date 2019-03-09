@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package uk.gov.gchq.gaffer.operation;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.google.common.collect.Sets;
@@ -102,6 +104,7 @@ public interface Operation extends Closeable {
      * other properties required for the operation to be executed. Note these options will probably not be interpreted
      * in the same way by every store implementation.
      */
+    @JsonIgnore
     Map<String, String> getOptions();
 
     /**
@@ -109,6 +112,7 @@ public interface Operation extends Closeable {
      *                other properties required for the operation to be executed. Note these options will probably not be interpreted
      *                in the same way by every store implementation.
      */
+    @JsonSetter
     void setOptions(final Map<String, String> options);
 
     /**
@@ -197,29 +201,11 @@ public interface Operation extends Closeable {
             final Required[] annotations = field.getAnnotationsByType(Required.class);
             if (null != annotations && annotations.length > 0) {
                 if (field.isAccessible()) {
-                    final Object value;
-                    try {
-                        value = field.get(this);
-                    } catch (final IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    if (null == value) {
-                        result.addError(field.getName() + " is required for: " + this.getClass().getSimpleName());
-                    }
+                    validateRequiredFieldPresent(result, field);
                 } else {
                     AccessController.doPrivileged((PrivilegedAction<Operation>) () -> {
                         field.setAccessible(true);
-                        final Object value;
-                        try {
-                            value = field.get(this);
-                        } catch (final IllegalAccessException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                        if (null == value) {
-                            result.addError(field.getName() + " is required for: " + this.getClass().getSimpleName());
-                        }
+                        validateRequiredFieldPresent(result, field);
                         return null;
                     });
                 }
@@ -227,6 +213,19 @@ public interface Operation extends Closeable {
         }
 
         return result;
+    }
+
+    default void validateRequiredFieldPresent(final ValidationResult result, final Field field) {
+        final Object value;
+        try {
+            value = field.get(this);
+        } catch (final IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (null == value) {
+            result.addError(field.getName() + " is required for: " + this.getClass().getSimpleName());
+        }
     }
 
     /**

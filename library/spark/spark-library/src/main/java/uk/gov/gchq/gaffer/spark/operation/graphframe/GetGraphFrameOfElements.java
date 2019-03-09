@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import uk.gov.gchq.gaffer.operation.io.Output;
 import uk.gov.gchq.gaffer.spark.operation.dataframe.converter.property.Converter;
 import uk.gov.gchq.gaffer.spark.serialisation.TypeReferenceSparkImpl;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.ValidationResult;
 
 import java.util.List;
@@ -45,6 +46,7 @@ import java.util.Map;
  * @see uk.gov.gchq.gaffer.spark.operation.dataframe.GetDataFrameOfElements
  */
 @Since("1.3.0")
+@Summary("Gets a GraphFrame of elements")
 public class GetGraphFrameOfElements implements
         Output<GraphFrame>,
         GraphFilters {
@@ -105,7 +107,7 @@ public class GetGraphFrameOfElements implements
     public ValidationResult validate() {
         final ValidationResult result = Output.super.validate();
 
-        if (!view.hasEdges() && !view.hasEntities()) {
+        if (result.isValid() && !view.hasEdges() && !view.hasEntities()) {
             result.addError("Cannot create a GraphFrame unless the View contains edges or entities.");
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 Crown Copyright
+ * Copyright 2017-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreConstants.KEY_OPERATION_OPTIONS_GRAPH_IDS;
 import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreConstants.KEY_SKIP_FAILED_FEDERATED_STORE_EXECUTE;
-import static uk.gov.gchq.gaffer.federatedstore.FederatedStoreUser.testUser;
+import static uk.gov.gchq.gaffer.user.StoreUser.testUser;
 
 public abstract class FederatedOperationOutputHandlerTest<OP extends Output<O>, O> {
     public static final String TEST_ENTITY = "TestEntity";
@@ -157,7 +157,6 @@ public abstract class FederatedOperationOutputHandlerTest<OP extends Output<O>, 
         given(mockStoreInner.getSchema()).willReturn(unusedSchema);
         given(mockStoreInner.getProperties()).willReturn(storeProperties);
         given(mockStoreInner.execute(any(OperationChain.class), any(Context.class))).willThrow(new RuntimeException(message));
-        given(mockStoreInner.createContext(any(User.class))).willReturn(context);
         FederatedStore mockStore = Mockito.mock(FederatedStore.class);
         HashSet<Graph> filteredGraphs = Sets.newHashSet(getGraphWithMockStore(mockStoreInner));
         Mockito.when(mockStore.getGraphs(user, TEST_GRAPH_ID)).thenReturn(filteredGraphs);
@@ -184,7 +183,6 @@ public abstract class FederatedOperationOutputHandlerTest<OP extends Output<O>, 
         given(mockStoreInner.getSchema()).willReturn(unusedSchema);
         given(mockStoreInner.getProperties()).willReturn(storeProperties);
         given(mockStoreInner.execute(any(OperationChain.class), eq(context))).willReturn(null);
-        given(mockStoreInner.createContext(any(User.class))).willReturn(context);
         FederatedStore mockStore = Mockito.mock(FederatedStore.class);
         HashSet<Graph> filteredGraphs = Sets.newHashSet(getGraphWithMockStore(mockStoreInner));
         Mockito.when(mockStore.getGraphs(user, TEST_GRAPH_ID)).thenReturn(filteredGraphs);
@@ -212,7 +210,6 @@ public abstract class FederatedOperationOutputHandlerTest<OP extends Output<O>, 
         given(mockStore3.getSchema()).willReturn(unusedSchema);
         given(mockStore3.getProperties()).willReturn(storeProperties);
         given(mockStore3.execute(any(OperationChain.class), eq(context))).willThrow(new RuntimeException("Test Exception"));
-        given(mockStore3.createContext(any(User.class))).willReturn(context);
         Store mockStore4 = getMockStore(unusedSchema, storeProperties, o4);
 
         FederatedStore mockStore = Mockito.mock(FederatedStore.class);
@@ -259,7 +256,6 @@ public abstract class FederatedOperationOutputHandlerTest<OP extends Output<O>, 
         Store mockStore1 = Mockito.mock(Store.class);
         given(mockStore1.getSchema()).willReturn(unusedSchema);
         given(mockStore1.getProperties()).willReturn(storeProperties);
-        given(mockStore1.createContext(any(User.class))).willReturn(context);
         given(mockStore1.execute(any(OperationChain.class), any(Context.class))).willReturn(willReturn);
         return mockStore1;
     }

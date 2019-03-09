@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import uk.gov.gchq.gaffer.commonutil.ToStringBuilder;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 import uk.gov.gchq.koryphe.predicate.KoryphePredicate;
 
 /**
@@ -29,6 +30,7 @@ import uk.gov.gchq.koryphe.predicate.KoryphePredicate;
  * {@link HyperLogLogPlus} cardinality is less than a control value.
  */
 @Since("1.0.0")
+@Summary("Tests a HyperLogLogPlus cardinality is less than a provided value")
 public class HyperLogLogPlusIsLessThan extends KoryphePredicate<HyperLogLogPlus> {
     private long controlValue;
     private boolean orEqualTo;

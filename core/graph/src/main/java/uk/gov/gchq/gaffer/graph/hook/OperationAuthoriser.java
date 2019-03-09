@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,10 +91,12 @@ public class OperationAuthoriser implements GraphHook {
         Collections.addAll(allAuths, auths);
     }
 
+    @JsonIgnore
     public Map<Class<?>, Set<String>> getAuths() {
         return Collections.unmodifiableMap(auths);
     }
 
+    @JsonIgnore
     public void setAuths(final Map<Class<?>, Set<String>> auths) {
         this.auths.clear();
         this.allAuths.clear();

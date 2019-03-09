@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Crown Copyright
+ * Copyright 2016-2019 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,21 @@
 package uk.gov.gchq.gaffer.named.operation;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import uk.gov.gchq.gaffer.commonutil.Required;
+import uk.gov.gchq.gaffer.operation.Operation;
+import uk.gov.gchq.gaffer.operation.Operations;
 import uk.gov.gchq.gaffer.operation.io.InputOutput;
 import uk.gov.gchq.gaffer.operation.io.MultiInput;
 import uk.gov.gchq.gaffer.operation.serialisation.TypeReferenceImpl;
 import uk.gov.gchq.koryphe.Since;
+import uk.gov.gchq.koryphe.Summary;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,14 +52,17 @@ import java.util.Map;
  */
 @JsonPropertyOrder(value = {"class", "input", "operationName"}, alphabetic = true)
 @Since("1.0.0")
+@Summary("Runs a named operation")
 public class NamedOperation<I_ITEM, O> implements
         InputOutput<Iterable<? extends I_ITEM>, O>,
-        MultiInput<I_ITEM> {
+        MultiInput<I_ITEM>,
+        Operation,
+        Operations<Operation> {
     private Iterable<? extends I_ITEM> input;
 
     @Required
     private String operationName;
-    private Map<String, Object> parameters;
+    private LinkedHashMap<String, Object> parameters;
     private Map<String, String> options;
 
     @Override
@@ -69,8 +79,19 @@ public class NamedOperation<I_ITEM, O> implements
         return parameters;
     }
 
-    public void setParameters(final Map<String, Object> parameters) {
+    @JsonSetter("parameters")
+    public void setParameters(final LinkedHashMap<String, Object> parameters) {
         this.parameters = parameters;
+    }
+
+    public void setParameters(final Map<String, Object> parameters) {
+        if (null != parameters) {
+            if (parameters instanceof LinkedHashMap) {
+                this.parameters = (LinkedHashMap) parameters;
+            } else {
+                this.parameters = new LinkedHashMap<>(parameters);
+            }
+        }
     }
 
     public String getOperationName() {
@@ -104,6 +125,22 @@ public class NamedOperation<I_ITEM, O> implements
     @Override
     public void setOptions(final Map<String, String> options) {
         this.options = options;
+    }
+
+    @Override
+    public List<Operation> getOperations() {
+
+        final List<Operation> operations = new ArrayList<>();
+        if (null != parameters) {
+            for (final Map.Entry<String, Object> parameterDetailPair : parameters.entrySet()) {
+                Object paramValue = parameterDetailPair.getValue();
+                if (paramValue instanceof Operation) {
+                    Operation operation = (Operation) paramValue;
+                    operations.add(operation);
+                }
+            }
+        }
+        return operations;
     }
 
     public static class Builder<I_ITEM, O> extends BaseBuilder<NamedOperation<I_ITEM, O>, Builder<I_ITEM, O>>
