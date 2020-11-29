@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,8 +100,8 @@ public class FederatedOperationChain<I, O_ITEM> extends GenericInput<I>
         return new OperationChainDAO(operationChain);
     }
 
-    @JsonIgnore
     @Override
+    @JsonIgnore
     public List<OperationChain> getOperations() {
         return Lists.newArrayList(operationChain);
     }

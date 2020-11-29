@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.apache.spark.sql.sources.Filter;
 import org.apache.spark.sql.sources.GreaterThan;
 import org.apache.spark.sql.sources.LessThan;
 import org.apache.spark.sql.sources.Or;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import uk.gov.gchq.gaffer.commonutil.StreamUtil;
 import uk.gov.gchq.gaffer.data.element.id.EntityId;
@@ -48,10 +48,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FilterToOperationConverterTest {
     private static final String ENTITY_GROUP = "BasicEntity";
@@ -72,8 +72,6 @@ public class FilterToOperationConverterTest {
 
         final Operation operation = converter.getOperation();
         assertNull(operation);
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -91,8 +89,6 @@ public class FilterToOperationConverterTest {
         assertTrue(operation instanceof GetRDDOfAllElements);
         assertEquals(Collections.singleton(ENTITY_GROUP), ((GraphFilters) operation).getView().getEntityGroups());
         assertEquals(0, ((GraphFilters) operation).getView().getEdgeGroups().size());
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -107,8 +103,6 @@ public class FilterToOperationConverterTest {
 
         final Operation operation = converter.getOperation();
         assertNull(operation);
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -127,8 +121,6 @@ public class FilterToOperationConverterTest {
         assertTrue(operation instanceof GetRDDOfAllElements);
         assertEquals(Collections.singleton(ENTITY_GROUP), ((GraphFilters) operation).getView().getEntityGroups());
         assertEquals(Collections.singleton(EDGE_GROUP2), ((GraphFilters) operation).getView().getEdgeGroups());
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -150,8 +142,6 @@ public class FilterToOperationConverterTest {
             seeds.add((EntitySeed) seed);
         }
         assertEquals(Collections.singleton(new EntitySeed("0")), seeds);
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -161,7 +151,7 @@ public class FilterToOperationConverterTest {
 
         final Filter[] filters = new Filter[1];
         filters[0] = new EqualTo(SchemaToStructTypeConverter.SRC_COL_NAME, "0");
-        FiltersToOperationConverter converter = new FiltersToOperationConverter( getViewFromSchema(schema),
+        FiltersToOperationConverter converter = new FiltersToOperationConverter(getViewFromSchema(schema),
                 schema, filters);
 
         Operation operation = converter.getOperation();
@@ -173,8 +163,6 @@ public class FilterToOperationConverterTest {
             seeds.add((EntitySeed) seed);
         }
         assertEquals(Collections.singleton(new EntitySeed("0")), seeds);
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -196,8 +184,6 @@ public class FilterToOperationConverterTest {
             seeds.add((EntitySeed) seed);
         }
         assertEquals(Collections.singleton(new EntitySeed("0")), seeds);
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -276,8 +262,6 @@ public class FilterToOperationConverterTest {
         assertEquals(expectedProperties.get(0), edgePostAggFilters.get(0).getSelection()[0]);
         assertEquals(1, edgePostAggFilters.get(1).getSelection().length);
         assertEquals(expectedProperties.get(1), edgePostAggFilters.get(1).getSelection()[0]);
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -317,8 +301,6 @@ public class FilterToOperationConverterTest {
         assertEquals(expectedProperties.get(0), edgePostAggFilters.get(0).getSelection()[0]);
         assertEquals(1, edgePostAggFilters.get(1).getSelection().length);
         assertEquals(expectedProperties.get(1), edgePostAggFilters.get(1).getSelection()[0]);
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -386,8 +368,6 @@ public class FilterToOperationConverterTest {
         expectedFunctions.add(new IsLessThan(8, false));
         assertEquals(expectedFunctions.get(0), entityPostAggFilters.get(0).getPredicate());
         assertEquals(expectedFunctions.get(1), entityPostAggFilters.get(1).getPredicate());
-
-        sparkSession.sparkContext().stop();
     }
 
     @Test
@@ -449,8 +429,6 @@ public class FilterToOperationConverterTest {
         assertEquals(1, entityPostAggFilters.get(1).getSelection().length);
         assertEquals(expectedProperties.get(1), entityPostAggFilters.get(1).getSelection()[0]);
         assertEquals(new IsLessThan(8, false), entityPostAggFilters.get(1).getPredicate());
-
-        sparkSession.sparkContext().stop();
     }
 
     private Schema getSchema() {

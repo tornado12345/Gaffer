@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,9 @@ public class FederatedOperationChainValidator extends OperationChainValidator {
                     //If any graph has a valid View, break with valid current result
                     break;
                 } else {
-                    savedResult.add(currentResult);
+                    ValidationResult prependGraphId = new ValidationResult();
+                    currentResult.getErrors().forEach(s -> prependGraphId.addError(String.format("(graphId: %s) %s", graphId, s)));
+                    savedResult.add(prependGraphId);
                 }
             }
         }

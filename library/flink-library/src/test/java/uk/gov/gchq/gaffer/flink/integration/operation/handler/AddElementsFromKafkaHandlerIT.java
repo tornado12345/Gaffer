@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ public class AddElementsFromKafkaHandlerIT extends FlinkTest {
         }).start();
 
         // Then
-        Thread.sleep(20000);
+        Thread.sleep(30000);
         try {
             verifyElements(graph);
         } catch (final AssertionError e) {

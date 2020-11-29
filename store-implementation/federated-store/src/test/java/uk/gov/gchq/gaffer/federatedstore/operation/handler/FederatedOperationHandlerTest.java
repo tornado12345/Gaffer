@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package uk.gov.gchq.gaffer.federatedstore.operation.handler;
 
 import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import uk.gov.gchq.gaffer.federatedstore.FederatedStore;
@@ -36,12 +36,12 @@ import uk.gov.gchq.gaffer.user.User;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -56,7 +56,7 @@ public class FederatedOperationHandlerTest {
     private User user;
     private Context context;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         user = testUser();
         context = new Context(user);
@@ -87,7 +87,7 @@ public class FederatedOperationHandlerTest {
         linkedGraphs.add(graph2);
         linkedGraphs.add(graph3);
         linkedGraphs.add(graph4);
-        when(mockStore.getGraphs(user, null)).thenReturn(linkedGraphs);
+        when(mockStore.getGraphs(user, null, op)).thenReturn(linkedGraphs);
 
         // When
         new FederatedOperationHandler().doOperation(op, context, mockStore);
@@ -122,7 +122,7 @@ public class FederatedOperationHandlerTest {
         LinkedHashSet<Graph> filteredGraphs = Sets.newLinkedHashSet();
         filteredGraphs.add(graph1);
         filteredGraphs.add(graph3);
-        when(mockStore.getGraphs(user, "1,3")).thenReturn(filteredGraphs);
+        when(mockStore.getGraphs(user, "1,3", op)).thenReturn(filteredGraphs);
 
         // When
         new FederatedOperationHandler().doOperation(op, context, mockStore);
@@ -163,7 +163,7 @@ public class FederatedOperationHandlerTest {
 
         FederatedStore mockStore = mock(FederatedStore.class);
         HashSet<Graph> filteredGraphs = Sets.newHashSet(getGraphWithMockStore(mockStoreInner));
-        when(mockStore.getGraphs(user, graphID)).thenReturn(filteredGraphs);
+        when(mockStore.getGraphs(user, graphID, op)).thenReturn(filteredGraphs);
         try {
             new FederatedOperationHandler().doOperation(op, context, mockStore);
             fail("Exception Not thrown");
@@ -174,7 +174,7 @@ public class FederatedOperationHandlerTest {
     }
 
     @Test
-    final public void shouldNotThrowExceptionBecauseSkipFlagSetTrue() throws Exception {
+    public void shouldNotThrowExceptionBecauseSkipFlagSetTrue() throws Exception {
         // Given
         final String graphID = "1,3";
         final Operation op = mock(Operation.class);
@@ -194,7 +194,7 @@ public class FederatedOperationHandlerTest {
         LinkedHashSet<Graph> filteredGraphs = Sets.newLinkedHashSet();
         filteredGraphs.add(getGraphWithMockStore(mockStore1));
         filteredGraphs.add(getGraphWithMockStore(mockStore2));
-        when(mockStore.getGraphs(user, graphID)).thenReturn(filteredGraphs);
+        when(mockStore.getGraphs(user, graphID, op)).thenReturn(filteredGraphs);
 
         // When
         try {

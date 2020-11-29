@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package uk.gov.gchq.gaffer.data.element.function;
 
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import uk.gov.gchq.gaffer.commonutil.ToStringBuilder;
 import uk.gov.gchq.gaffer.data.element.Properties;
@@ -65,5 +68,29 @@ public class PropertiesTuple implements Tuple<String> {
         return new ToStringBuilder(this)
                 .append("properties", properties)
                 .build();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final PropertiesTuple objects = (PropertiesTuple) o;
+
+        return new EqualsBuilder()
+                .append(properties, objects.properties)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(5, 41)
+                .append(properties)
+                .toHashCode();
     }
 }

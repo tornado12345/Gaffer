@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -279,11 +279,8 @@ public class OperationServiceV2 implements IOperationServiceV2 {
             result = graphFactory.getGraph().execute(new GraphRequest<>(opChain, context));
         } catch (final OperationException e) {
             CloseableUtil.close(operation);
-            if (null != e.getMessage()) {
-                throw new RuntimeException("Error executing opChain: " + e.getMessage(), e);
-            } else {
-                throw new RuntimeException("Error executing opChain", e);
-            }
+            final String message = null != e.getMessage() ? "Error executing opChain: " + e.getMessage() : "Error executing opChain";
+            throw new GafferRuntimeException(message, e, e.getStatus());
         } finally {
             try {
                 postOperationHook(opChain, context);

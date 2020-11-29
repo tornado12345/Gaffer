@@ -27,7 +27,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import scala.collection.Seq;
 
 import uk.gov.gchq.gaffer.data.element.Element;
@@ -124,7 +123,6 @@ public class SortFullGroup implements Callable<OperationException> {
 
         LOGGER.info("Sampling data from {} input files to identify split points for sorting", inputFilesThatExist.size());
         final List<Seq<Object>> rows = spark.read()
-                .option("mergeSchema", true)
                 .parquet(inputFilesThatExist.toArray(new String[]{}))
                 .javaRDD()
                 .map(extractKeyFromRow)
@@ -167,7 +165,6 @@ public class SortFullGroup implements Callable<OperationException> {
 
         LOGGER.info("Partitioning data using split points and sorting within partition, outputting to {}", outputDir);
         final JavaRDD<Row> partitionedData = spark.read()
-                .option("mergeSchema", true)
                 .parquet(inputFilesThatExist.toArray(new String[]{}))
                 .javaRDD()
                 .keyBy(new ExtractKeyFromRow(new HashSet<>(),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,13 @@ import uk.gov.gchq.gaffer.commonutil.pair.Pair;
 import uk.gov.gchq.gaffer.data.elementdefinition.exception.SchemaException;
 import uk.gov.gchq.gaffer.data.elementdefinition.view.NamedView;
 import uk.gov.gchq.gaffer.data.elementdefinition.view.View;
+import uk.gov.gchq.gaffer.graph.hook.FunctionAuthoriser;
+import uk.gov.gchq.gaffer.graph.hook.FunctionAuthoriserUtil;
 import uk.gov.gchq.gaffer.graph.hook.GraphHook;
 import uk.gov.gchq.gaffer.graph.hook.NamedOperationResolver;
 import uk.gov.gchq.gaffer.graph.hook.NamedViewResolver;
 import uk.gov.gchq.gaffer.graph.hook.UpdateViewHook;
+import uk.gov.gchq.gaffer.jobtracker.Job;
 import uk.gov.gchq.gaffer.jobtracker.JobDetail;
 import uk.gov.gchq.gaffer.jsonserialisation.JSONSerialiser;
 import uk.gov.gchq.gaffer.named.operation.NamedOperation;
@@ -222,6 +225,74 @@ public final class Graph {
         return _execute(store::executeJob, request);
     }
 
+    /**
+     * Performs the given Job on the store.
+     * This should be used for Scheduled Jobs,
+     * although if no repeat is set it
+     * will act as a normal Job.
+     *
+     * @param job  the {@link Job} to execute, which contains the {@link OperationChain} and the {@link uk.gov.gchq.gaffer.jobtracker.Repeat}
+     * @param user the user running the Job.
+     * @return the job detail.
+     * @throws OperationException thrown if the job fails to run.
+     */
+    public JobDetail executeJob(final Job job, final User user) throws OperationException {
+        return executeJob(job, new Context(user));
+    }
+
+    /**
+     * Performs the given Job on the store.
+     * This should be used for Scheduled Jobs,
+     * although if no repeat is set it
+     * will act as a normal Job.
+     *
+     * @param job     the {@link Job} to execute, which contains the {@link OperationChain} and the {@link uk.gov.gchq.gaffer.jobtracker.Repeat}
+     * @param context the user context for the execution of the operation
+     * @return the job detail
+     * @throws OperationException thrown if the job fails to run.
+     */
+    public JobDetail executeJob(final Job job, final Context context) throws OperationException {
+        if (null == context) {
+            throw new IllegalArgumentException("A context is required");
+        }
+
+        if (null == job) {
+            throw new IllegalArgumentException("A job is required");
+        }
+
+        OperationChain wrappedOriginal = OperationChain.wrap(job.getOperation());
+
+        context.setOriginalOpChain(wrappedOriginal);
+
+        final Context clonedContext = context.shallowClone();
+        final OperationChain clonedOpChain = wrappedOriginal.shallowClone();
+        JobDetail result = null;
+        try {
+            updateOperationChainView(clonedOpChain);
+            for (final GraphHook graphHook : config.getHooks()) {
+                graphHook.preExecute(clonedOpChain, clonedContext);
+            }
+            updateOperationChainView(clonedOpChain);
+            job.setOperation(clonedOpChain);
+            result = store.executeJob(job, context);
+            for (final GraphHook graphHook : config.getHooks()) {
+                graphHook.postExecute(result, clonedOpChain, clonedContext);
+            }
+        } catch (final Exception e) {
+            for (final GraphHook graphHook : config.getHooks()) {
+                try {
+                    result = graphHook.onFailure(result, clonedOpChain, clonedContext, e);
+                } catch (final Exception graphHookE) {
+                    LOGGER.warn("Error in graphHook " + graphHook.getClass().getSimpleName() + ": " + graphHookE.getMessage(), graphHookE);
+                }
+            }
+            CloseableUtil.close(clonedOpChain);
+            CloseableUtil.close(result);
+            throw e;
+        }
+        return result;
+    }
+
     private <O> GraphResult<O> _execute(final StoreExecuter<O> storeExecuter, final GraphRequest<?> request) throws OperationException {
         if (null == request) {
             throw new IllegalArgumentException("A request is required");
@@ -237,6 +308,7 @@ public final class Graph {
         final OperationChain clonedOpChain = request.getOperationChain().shallowClone();
         O result = null;
         try {
+            updateOperationChainView(clonedOpChain);
             for (final GraphHook graphHook : config.getHooks()) {
                 graphHook.preExecute(clonedOpChain, clonedContext);
             }
@@ -247,18 +319,17 @@ public final class Graph {
             updateOperationChainView(clonedOpChain);
             // Runs the updateGraphHook instance (if set) or if not runs a
             // new instance
-            UpdateViewHook hookInstance = null;
+            ArrayList<UpdateViewHook> hookInstances = new ArrayList<>();
             for (final GraphHook graphHook : config.getHooks()) {
                 if (UpdateViewHook.class.isAssignableFrom(graphHook.getClass())) {
-                    hookInstance = (UpdateViewHook) graphHook;
-                    break;
+                    hookInstances.add((UpdateViewHook) graphHook);
                 }
             }
-            if (null == hookInstance) {
-                UpdateViewHook updateViewHook = new UpdateViewHook();
-                updateViewHook.preExecute(clonedOpChain, clonedContext);
-            } else {
-                hookInstance.preExecute(clonedOpChain, clonedContext);
+            if (hookInstances.size() == 0) {
+                hookInstances.add(new UpdateViewHook());
+            }
+            for (final UpdateViewHook hook : hookInstances) {
+                hook.preExecute(clonedOpChain, clonedContext);
             }
             result = (O) storeExecuter.execute(clonedOpChain, clonedContext);
             for (final GraphHook graphHook : config.getHooks()) {
@@ -908,24 +979,25 @@ public final class Graph {
         }
 
         private void updateGraphHooks(final GraphConfig config) {
-            boolean hasNamedOpHook = false;
-            boolean hasNamedViewHook = false;
-            for (final GraphHook graphHook : config.getHooks()) {
-                if (NamedOperationResolver.class.isAssignableFrom(graphHook.getClass())) {
-                    hasNamedOpHook = true;
-                }
-                if (NamedViewResolver.class.isAssignableFrom(graphHook.getClass())) {
-                    hasNamedViewHook = true;
+            List<GraphHook> hooks = config.getHooks();
+            if (!hasHook(hooks, NamedViewResolver.class)) {
+                hooks.add(0, new NamedViewResolver());
+            }
+            if (store.isSupported(NamedOperation.class) && !hasHook(hooks, NamedOperationResolver.class)) {
+                config.getHooks().add(0, new NamedOperationResolver());
+            }
+            if (!hasHook(hooks, FunctionAuthoriser.class)) {
+                config.getHooks().add(new FunctionAuthoriser(FunctionAuthoriserUtil.DEFAULT_UNAUTHORISED_FUNCTIONS));
+            }
+        }
+
+        private boolean hasHook(final List<GraphHook> hooks, final Class<? extends GraphHook> hookClass) {
+            for (final GraphHook hook : hooks) {
+                if (hookClass.isAssignableFrom(hook.getClass())) {
+                    return true;
                 }
             }
-            if (!hasNamedViewHook) {
-                config.getHooks().add(0, new NamedViewResolver());
-            }
-            if (!hasNamedOpHook) {
-                if (store.isSupported(NamedOperation.class)) {
-                    config.getHooks().add(0, new NamedOperationResolver());
-                }
-            }
+            return false;
         }
 
         private void updateSchema(final GraphConfig config) {
@@ -1032,6 +1104,5 @@ public final class Graph {
         private Schema cloneSchema(final Schema schema) {
             return null != schema ? schema.clone() : null;
         }
-
     }
 }

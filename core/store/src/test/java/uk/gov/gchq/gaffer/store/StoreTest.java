@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,27 +19,32 @@ package uk.gov.gchq.gaffer.store;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import uk.gov.gchq.gaffer.cache.CacheServiceLoader;
 import uk.gov.gchq.gaffer.cache.impl.HashMapCacheService;
 import uk.gov.gchq.gaffer.cache.util.CacheProperties;
+import uk.gov.gchq.gaffer.commonutil.CommonConstants;
 import uk.gov.gchq.gaffer.commonutil.TestGroups;
 import uk.gov.gchq.gaffer.commonutil.TestPropertyNames;
 import uk.gov.gchq.gaffer.commonutil.iterable.CloseableIterable;
+import uk.gov.gchq.gaffer.commonutil.iterable.WrappedCloseableIterable;
 import uk.gov.gchq.gaffer.data.element.Element;
 import uk.gov.gchq.gaffer.data.element.Entity;
 import uk.gov.gchq.gaffer.data.element.IdentifierType;
 import uk.gov.gchq.gaffer.data.element.LazyEntity;
 import uk.gov.gchq.gaffer.data.element.id.EntityId;
 import uk.gov.gchq.gaffer.data.elementdefinition.exception.SchemaException;
+import uk.gov.gchq.gaffer.exception.SerialisationException;
+import uk.gov.gchq.gaffer.jobtracker.Job;
 import uk.gov.gchq.gaffer.jobtracker.JobDetail;
 import uk.gov.gchq.gaffer.jobtracker.JobStatus;
 import uk.gov.gchq.gaffer.jobtracker.JobTracker;
+import uk.gov.gchq.gaffer.jobtracker.Repeat;
 import uk.gov.gchq.gaffer.jsonserialisation.JSONSerialiser;
 import uk.gov.gchq.gaffer.named.operation.AddNamedOperation;
 import uk.gov.gchq.gaffer.named.operation.DeleteNamedOperation;
@@ -84,6 +89,7 @@ import uk.gov.gchq.gaffer.operation.impl.generate.GenerateObjects;
 import uk.gov.gchq.gaffer.operation.impl.get.GetAdjacentIds;
 import uk.gov.gchq.gaffer.operation.impl.get.GetAllElements;
 import uk.gov.gchq.gaffer.operation.impl.get.GetElements;
+import uk.gov.gchq.gaffer.operation.impl.job.CancelScheduledJob;
 import uk.gov.gchq.gaffer.operation.impl.job.GetAllJobDetails;
 import uk.gov.gchq.gaffer.operation.impl.job.GetJobDetails;
 import uk.gov.gchq.gaffer.operation.impl.job.GetJobResults;
@@ -101,6 +107,7 @@ import uk.gov.gchq.gaffer.serialisation.Serialiser;
 import uk.gov.gchq.gaffer.serialisation.ToBytesSerialiser;
 import uk.gov.gchq.gaffer.serialisation.implementation.StringSerialiser;
 import uk.gov.gchq.gaffer.serialisation.implementation.tostring.StringToStringSerialiser;
+import uk.gov.gchq.gaffer.store.Store.ScheduledJobRunnable;
 import uk.gov.gchq.gaffer.store.library.GraphLibrary;
 import uk.gov.gchq.gaffer.store.operation.GetSchema;
 import uk.gov.gchq.gaffer.store.operation.GetTraits;
@@ -124,6 +131,7 @@ import uk.gov.gchq.gaffer.user.User;
 import uk.gov.gchq.koryphe.ValidationResult;
 import uk.gov.gchq.koryphe.impl.binaryoperator.StringConcat;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -131,17 +139,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RunnableScheduledFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -167,7 +182,7 @@ public class StoreTest {
     private StoreImpl store;
     private OperationChainValidator operationChainValidator;
 
-    @Before
+    @BeforeEach
     public void setup() {
         System.clearProperty(JSONSerialiser.JSON_SERIALISER_CLASS_KEY);
         System.clearProperty(JSONSerialiser.JSON_SERIALISER_MODULES);
@@ -219,7 +234,7 @@ public class StoreTest {
                 .build();
     }
 
-    @After
+    @AfterEach
     public void after() {
         System.clearProperty(JSONSerialiser.JSON_SERIALISER_CLASS_KEY);
         System.clearProperty(JSONSerialiser.JSON_SERIALISER_MODULES);
@@ -387,7 +402,7 @@ public class StoreTest {
         // Given
         final Schema schema = createSchemaMock();
         final StoreProperties properties = mock(StoreProperties.class);
-        final Operation operation = mock(Operation.class);
+        final Operation operation = new SetVariable.Builder().variableName("aVariable").input("inputString").build();
         given(properties.getJobExecutorThreadCount()).willReturn(1);
 
         store.initialise("graphId", schema, properties);
@@ -546,6 +561,7 @@ public class StoreTest {
                 ToSingletonList.class,
                 ForEach.class,
                 Reduce.class,
+                CancelScheduledJob.class,
 
                 // Function
                 Filter.class,
@@ -654,6 +670,7 @@ public class StoreTest {
                 ToSingletonList.class,
                 ForEach.class,
                 Reduce.class,
+                CancelScheduledJob.class,
 
                 // Function
                 Filter.class,
@@ -721,9 +738,9 @@ public class StoreTest {
     }
 
     @Test
-    public void shouldExecuteOperationChainJob() throws OperationException, ExecutionException, InterruptedException, StoreException {
+    public void shouldExecuteOperationChainJob() throws OperationException, InterruptedException, StoreException {
         // Given
-        final Operation operation = mock(Operation.class);
+        final Operation operation = new GetVariables.Builder().variableNames(Lists.newArrayList()).build();
         final OperationChain<?> opChain = new OperationChain.Builder()
                 .first(operation)
                 .then(new ExportToGafferResultCache())
@@ -751,9 +768,36 @@ public class StoreTest {
     }
 
     @Test
-    public void shouldExecuteOperationChainJobAndExportResults() throws OperationException, ExecutionException, InterruptedException, StoreException {
+    public void shouldExecuteOperationJobAndWrapJobOperationInChain() throws OperationException, InterruptedException, StoreException, SerialisationException {
         // Given
-        final Operation operation = mock(Operation.class);
+        final Operation operation = new GetVariables.Builder().variableNames(Lists.newArrayList()).build();
+        final StoreProperties properties = mock(StoreProperties.class);
+        given(properties.getJobExecutorThreadCount()).willReturn(1);
+        given(properties.getJobTrackerEnabled()).willReturn(true);
+        final Store store = new StoreImpl();
+        final Schema schema = new Schema();
+        store.initialise("graphId", schema, properties);
+
+        // When
+        final JobDetail resultJobDetail = store.executeJob(operation, context);
+
+        // Then
+        Thread.sleep(1000);
+        final ArgumentCaptor<JobDetail> jobDetail = ArgumentCaptor.forClass(JobDetail.class);
+        verify(jobTracker, times(2)).addOrUpdateJob(jobDetail.capture(), eq(user));
+        assertEquals(jobDetail.getAllValues().get(0), resultJobDetail);
+        assertEquals(OperationChain.wrap(operation).toOverviewString(), resultJobDetail.getOpChain());
+        assertEquals(JobStatus.FINISHED, jobDetail.getAllValues().get(1).getStatus());
+
+        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+        verify(exportToGafferResultCacheHandler).doOperation(Mockito.any(ExportToGafferResultCache.class), contextCaptor.capture(), eq(store));
+        assertSame(user, contextCaptor.getValue().getUser());
+    }
+
+    @Test
+    public void shouldExecuteOperationChainJobAndExportResults() throws OperationException, InterruptedException, StoreException {
+        // Given
+        final Operation operation = new GetVariables.Builder().variableNames(Lists.newArrayList()).build();
         final OperationChain<?> opChain = new OperationChain<>(operation);
         final StoreProperties properties = mock(StoreProperties.class);
         given(properties.getJobExecutorThreadCount()).willReturn(1);
@@ -778,7 +822,7 @@ public class StoreTest {
     }
 
     @Test
-    public void shouldGetJobTracker() throws OperationException, ExecutionException, InterruptedException, StoreException {
+    public void shouldGetJobTracker() throws StoreException {
         // Given
         final StoreProperties properties = mock(StoreProperties.class);
         given(properties.getJobExecutorThreadCount()).willReturn(1);
@@ -842,7 +886,7 @@ public class StoreTest {
     }
 
 
-    @Test(expected = SchemaException.class)
+    @Test
     public void shouldFindInvalidSerialiser() throws Exception {
         final Class<StringToStringSerialiser> invalidSerialiserClass = StringToStringSerialiser.class;
         Schema invalidSchema = new Schema.Builder()
@@ -875,17 +919,121 @@ public class StoreTest {
                     return validSerialiserInterface;
                 }
             }.initialise("graphId", invalidSchema, properties);
+            fail("Should have thrown exception");
         } catch (final SchemaException e) {
             assertTrue(e.getMessage().contains(invalidSerialiserClass.getSimpleName()));
-            throw e;
         }
-        fail("Exception wasn't caught");
+    }
+
+    @Test
+    public void shouldCorrectlySetUpScheduledJobDetail() throws Exception {
+        // Given
+        final StoreProperties properties = mock(StoreProperties.class);
+        given(properties.getJobTrackerEnabled()).willReturn(true);
+        given(properties.getJobExecutorThreadCount()).willReturn(1);
+
+        StoreImpl2 store = new StoreImpl2();
+
+        store.initialise("graphId", schema, properties);
+
+        final Repeat repeat = new Repeat(0, 100, TimeUnit.SECONDS);
+        final OperationChain opChain = new OperationChain
+                .Builder()
+                .first(new DiscardOutput())
+                .build();
+        final Context context = new Context(user);
+        final String operationChainOverviewString = opChain.toOverviewString();
+        final String serialisedOperationChain = new String(JSONSerialiser.serialise(opChain), Charset.forName(CommonConstants.UTF_8));
+
+        // When - setup job
+        JobDetail parentJobDetail = store.executeJob(new Job(repeat, opChain), context);
+
+        ScheduledExecutorService service = store.getExecutorService();
+
+        // Then - assert scheduled
+        verify(service).scheduleAtFixedRate(
+                any(Runnable.class),
+                eq(repeat.getInitialDelay()),
+                eq(repeat.getRepeatPeriod()),
+                eq(repeat.getTimeUnit()));
+
+        // Then - assert job detail is as expected
+        assertEquals(JobStatus.SCHEDULED_PARENT, parentJobDetail.getStatus());
+        assertEquals(operationChainOverviewString, parentJobDetail.getOpChain());
+        assertEquals(serialisedOperationChain, parentJobDetail.getSerialisedOperationChain());
+        assertEquals(context.getUser(), parentJobDetail.getUser());
+    }
+
+    @Test
+    public void shouldCorrectlyRescheduleJobsOnInitialisation() throws Exception {
+
+        shouldRescheduleJobsCorrectlyWhenInitialisationCountIs(1);
+    }
+
+    @Test
+    public void shouldOnlyRescheduleJobsOnceWhenInitialisationCalledMultipleTimes() throws Exception {
+
+        shouldRescheduleJobsCorrectlyWhenInitialisationCountIs(5);
+    }
+
+    private void shouldRescheduleJobsCorrectlyWhenInitialisationCountIs(final int initialisationCount) throws Exception {
+        // Given
+        final StoreProperties properties = mock(StoreProperties.class);
+        given(properties.getJobTrackerEnabled()).willReturn(true);
+        given(properties.getJobExecutorThreadCount()).willReturn(1);
+
+        final Repeat repeat = new Repeat(0, 100, TimeUnit.SECONDS);
+        final OperationChain opChain = new OperationChain
+                .Builder()
+                .first(new DiscardOutput())
+                .build();
+
+        final User user = new User.Builder()
+                .userId("testUser")
+                .opAuth("opAuth")
+                .dataAuth("dataAuth")
+                .build();
+
+        final JobDetail scheduledJobDetail = new JobDetail.Builder()
+                .jobId("jobId")
+                .user(user)
+                .opChain(opChain.toOverviewString())
+                .serialisedOperationChain(opChain)
+                .repeat(repeat)
+                .build();
+
+        given(jobTracker.getAllScheduledJobs()).willReturn(new WrappedCloseableIterable(singletonList(scheduledJobDetail)));
+
+        StoreImpl2 store = new StoreImpl2();
+
+        // When - initialise store
+        for (int i = 0; i < initialisationCount; i++) {
+            store.initialise("graphId", schema, properties);
+        }
+
+        ScheduledExecutorService service = store.getExecutorService();
+
+        // Then - assert scheduled
+        final ArgumentCaptor<ScheduledJobRunnable> scheduledJobRunnableCaptor = ArgumentCaptor.forClass(ScheduledJobRunnable.class);
+
+        verify(service).scheduleAtFixedRate(
+                scheduledJobRunnableCaptor.capture(),
+                eq(repeat.getInitialDelay()),
+                eq(repeat.getRepeatPeriod()),
+                eq(repeat.getTimeUnit()));
+
+        assertEquals(scheduledJobDetail, scheduledJobRunnableCaptor.getValue().getJobDetail());
+        assertEquals(user, scheduledJobRunnableCaptor.getValue().getContext().getUser());
+        assertArrayEquals(
+                JSONSerialiser.serialise(opChain),
+                JSONSerialiser.serialise(scheduledJobRunnableCaptor.getValue().getOperationChain()));
     }
 
     private class StoreImpl extends Store {
-        private final Set<StoreTrait> TRAITS = new HashSet<>(Arrays.asList(INGEST_AGGREGATION, PRE_AGGREGATION_FILTERING, TRANSFORMATION, ORDERED));
+        private final Set<StoreTrait> traits = new HashSet<>(Arrays.asList(INGEST_AGGREGATION, PRE_AGGREGATION_FILTERING, TRANSFORMATION, ORDERED));
         private final ArrayList<Operation> doUnhandledOperationCalls = new ArrayList<>();
         private int createOperationHandlersCallCount;
+        private final ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
 
         @Override
         protected OperationChainValidator createOperationChainValidator() {
@@ -894,10 +1042,18 @@ public class StoreTest {
 
         @Override
         public Set<StoreTrait> getTraits() {
-            return TRAITS;
+            return traits;
         }
 
         public OperationHandler getOperationHandlerExposed(final Class<? extends Operation> opClass) {
+            return super.getOperationHandler(opClass);
+        }
+
+        @Override
+        public OperationHandler<Operation> getOperationHandler(final Class<? extends Operation> opClass) {
+            if (opClass.equals(SetVariable.class)) {
+                return null;
+            }
             return super.getOperationHandler(opClass);
         }
 
@@ -963,6 +1119,113 @@ public class StoreTest {
         @Override
         protected Class<? extends Serialiser> getRequiredParentSerialiserClass() {
             return Serialiser.class;
+        }
+    }
+
+    // Second store implementation with overriding ExecutorService.
+    // This cannot be done in the first because the other tests for Jobs will fail due to mocking.
+    private class StoreImpl2 extends Store {
+        private final Set<StoreTrait> traits = new HashSet<>(Arrays.asList(INGEST_AGGREGATION, PRE_AGGREGATION_FILTERING, TRANSFORMATION, ORDERED));
+        private final ArrayList<Operation> doUnhandledOperationCalls = new ArrayList<>();
+        private int createOperationHandlersCallCount;
+        private final ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+
+        @Override
+        protected OperationChainValidator createOperationChainValidator() {
+            return operationChainValidator;
+        }
+
+        @Override
+        public Set<StoreTrait> getTraits() {
+            return traits;
+        }
+
+        public OperationHandler getOperationHandlerExposed(final Class<? extends Operation> opClass) {
+            return super.getOperationHandler(opClass);
+        }
+
+        @Override
+        public OperationHandler<Operation> getOperationHandler(final Class<? extends Operation> opClass) {
+            if (opClass.equals(SetVariable.class)) {
+                return null;
+            }
+            return super.getOperationHandler(opClass);
+        }
+
+        @Override
+        protected void addAdditionalOperationHandlers() {
+            createOperationHandlersCallCount++;
+            addOperationHandler(mock(AddElements.class).getClass(), addElementsHandler);
+            addOperationHandler(mock(GetElements.class).getClass(), (OperationHandler) getElementsHandler);
+            addOperationHandler(mock(GetAdjacentIds.class).getClass(), getElementsHandler);
+            addOperationHandler(Validate.class, validateHandler);
+            addOperationHandler(ExportToGafferResultCache.class, exportToGafferResultCacheHandler);
+            addOperationHandler(GetGafferResultCacheExport.class, getGafferResultCacheExportHandler);
+        }
+
+        @Override
+        protected OutputOperationHandler<GetElements, CloseableIterable<? extends Element>> getGetElementsHandler() {
+            return getElementsHandler;
+        }
+
+        @Override
+        protected OutputOperationHandler<GetAllElements, CloseableIterable<? extends Element>> getGetAllElementsHandler() {
+            return getAllElementsHandler;
+        }
+
+        @Override
+        protected OutputOperationHandler<GetAdjacentIds, CloseableIterable<? extends EntityId>> getAdjacentIdsHandler() {
+            return getAdjacentIdsHandler;
+        }
+
+        @Override
+        protected OperationHandler<AddElements> getAddElementsHandler() {
+            return addElementsHandler;
+        }
+
+        @Override
+        protected Object doUnhandledOperation(final Operation operation, final Context context) {
+            doUnhandledOperationCalls.add(operation);
+            return null;
+        }
+
+        public int getCreateOperationHandlersCallCount() {
+            return createOperationHandlersCallCount;
+        }
+
+        public ArrayList<Operation> getDoUnhandledOperationCalls() {
+            return doUnhandledOperationCalls;
+        }
+
+        @Override
+        public void optimiseSchema() {
+            schemaOptimiser.optimise(getSchema(), hasTrait(StoreTrait.ORDERED));
+        }
+
+        @Override
+        protected JobTracker createJobTracker() {
+            if (getProperties().getJobTrackerEnabled()) {
+                return jobTracker;
+            }
+
+            return null;
+        }
+
+        @Override
+        protected Class<? extends Serialiser> getRequiredParentSerialiserClass() {
+            return Serialiser.class;
+        }
+
+        @Override
+        protected ScheduledExecutorService getExecutorService() {
+            ScheduledFuture<?> future = Mockito.mock(RunnableScheduledFuture.class);
+            doReturn(future).when(executorService).scheduleAtFixedRate(
+                    any(Runnable.class),
+                    anyLong(),
+                    anyLong(),
+                    any(TimeUnit.class)
+            );
+            return executorService;
         }
     }
 

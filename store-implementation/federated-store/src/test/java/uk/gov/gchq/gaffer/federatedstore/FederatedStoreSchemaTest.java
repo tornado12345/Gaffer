@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 package uk.gov.gchq.gaffer.federatedstore;
 
 import com.google.common.collect.Lists;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import uk.gov.gchq.gaffer.accumulostore.AccumuloProperties;
-import uk.gov.gchq.gaffer.accumulostore.MockAccumuloStore;
 import uk.gov.gchq.gaffer.cache.CacheServiceLoader;
+import uk.gov.gchq.gaffer.commonutil.StreamUtil;
 import uk.gov.gchq.gaffer.commonutil.iterable.CloseableIterable;
 import uk.gov.gchq.gaffer.data.element.Element;
 import uk.gov.gchq.gaffer.federatedstore.operation.AddGraph;
@@ -36,10 +36,11 @@ import uk.gov.gchq.gaffer.store.schema.TypeDefinition;
 import uk.gov.gchq.gaffer.user.User;
 import uk.gov.gchq.koryphe.impl.binaryoperator.StringConcat;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static uk.gov.gchq.gaffer.store.TestTypes.DIRECTED_EITHER;
 import static uk.gov.gchq.gaffer.user.StoreUser.testUser;
+
 
 public class FederatedStoreSchemaTest {
     private static final String STRING = "string";
@@ -52,26 +53,24 @@ public class FederatedStoreSchemaTest {
     public User testUser;
     public Context testContext;
     public static final String TEST_FED_STORE = "testFedStore";
-    public static final HashMapGraphLibrary library = new HashMapGraphLibrary();
+    public static final HashMapGraphLibrary LIBRARY = new HashMapGraphLibrary();
     public static final String ACC_PROP = "accProp";
 
     private FederatedStore fStore;
-    private static final AccumuloProperties ACCUMULO_PROPERTIES = new AccumuloProperties();
     private static final FederatedStoreProperties FEDERATED_PROPERTIES = new FederatedStoreProperties();
     private static final String CACHE_SERVICE_CLASS_STRING = "uk.gov.gchq.gaffer.cache.impl.HashMapCacheService";
 
-    @Before
+    private static Class currentClass = new Object() { }.getClass().getEnclosingClass();
+    private static final AccumuloProperties PROPERTIES = AccumuloProperties.loadStoreProperties(StreamUtil.openStream(currentClass, "properties/accumuloStore.properties"));
+
+    @BeforeEach
     public void setUp() throws Exception {
         CacheServiceLoader.shutdown();
-        ACCUMULO_PROPERTIES.setStoreClass(MockAccumuloStore.class);
-        ACCUMULO_PROPERTIES.setStorePropertiesClass(AccumuloProperties.class);
-
-        FEDERATED_PROPERTIES.setCacheProperties(CACHE_SERVICE_CLASS_STRING);
 
         fStore = new FederatedStore();
         fStore.initialise(TEST_FED_STORE, null, FEDERATED_PROPERTIES);
 
-        fStore.setGraphLibrary(library);
+        fStore.setGraphLibrary(LIBRARY);
 
         testUser = testUser();
         testContext = new Context(testUser);
@@ -79,8 +78,8 @@ public class FederatedStoreSchemaTest {
 
     @Test
     public void shouldBeAbleToAddGraphsWithSchemaCollisions() throws Exception {
-        library.addProperties(ACC_PROP, ACCUMULO_PROPERTIES);
-        fStore.setGraphLibrary(library);
+        LIBRARY.addProperties(ACC_PROP, PROPERTIES);
+        fStore.setGraphLibrary(LIBRARY);
 
         String aSchema1ID = "aSchema";
         final Schema aSchema = new Schema.Builder()
@@ -89,7 +88,7 @@ public class FederatedStoreSchemaTest {
                 .merge(STRING_SCHEMA)
                 .build();
 
-        library.addSchema(aSchema1ID, aSchema);
+        LIBRARY.addSchema(aSchema1ID, aSchema);
 
         fStore.execute(OperationChain.wrap(
                 new AddGraph.Builder()
@@ -105,9 +104,9 @@ public class FederatedStoreSchemaTest {
                 .merge(STRING_SCHEMA)
                 .build();
 
-        library.addSchema(bSchema1ID, bSchema);
+        LIBRARY.addSchema(bSchema1ID, bSchema);
 
-        assertFalse(library.exists("b"));
+        assertFalse(LIBRARY.exists("b"));
 
         fStore.execute(OperationChain.wrap(new AddGraph.Builder()
                 .graphId("b")
@@ -132,13 +131,13 @@ public class FederatedStoreSchemaTest {
                 .edge("e1", getProp("prop1"))
                 .type(DIRECTED_EITHER, Boolean.class)
                 .merge(STRING_SCHEMA)
-                .build(), ACCUMULO_PROPERTIES);
+                .build(), PROPERTIES);
 
         library.add("b", new Schema.Builder()
                 .edge("e1", getProp("prop2"))
                 .type(DIRECTED_EITHER, Boolean.class)
                 .merge(STRING_SCHEMA)
-                .build(), ACCUMULO_PROPERTIES);
+                .build(), PROPERTIES);
 
 
         fStore.execute(new AddGraph.Builder()

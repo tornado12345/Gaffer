@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package uk.gov.gchq.gaffer.commonutil;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PropertiesUtilTest {
     private static final String INVALID_STRING = "inv@l1dStr|ng&^";
@@ -27,20 +28,14 @@ public class PropertiesUtilTest {
 
     @Test
     public void shouldThrowExceptionWithInvalidStringName() {
-        // When / Then
-        try {
-            PropertiesUtil.validateName(INVALID_STRING);
-            fail("Exception expected");
-        } catch (final IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("Property is invalid"));
-        }
+        final Exception exception = assertThrows(IllegalArgumentException.class, () -> PropertiesUtil.validateName(INVALID_STRING));
+
+        final String expected = "Property is invalid: inv@l1dStr|ng&^, it must match regex: [a-zA-Z0-9|-]*";
+        assertEquals(expected, exception.getMessage());
     }
 
     @Test
     public void shouldPassValidationWithValidStringName() {
-        // When
-        PropertiesUtil.validateName(VALID_STRING);
-
-        // Then - no exceptions
+        assertDoesNotThrow(() -> PropertiesUtil.validateName(VALID_STRING));
     }
 }

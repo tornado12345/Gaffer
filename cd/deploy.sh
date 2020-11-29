@@ -7,6 +7,7 @@ repoId="Gaffer"
 artifactId="gaffer2"
 
 if [ "$RELEASE" == 'true' ] && [ "$TRAVIS_BRANCH" == 'master' ] && [ "$TRAVIS_PULL_REQUEST" == 'false' ]; then
+    ./cd/install_koryphe.sh
     git checkout master
     mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version
     POM_VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
@@ -79,8 +80,9 @@ if [ "$RELEASE" == 'true' ] && [ "$TRAVIS_BRANCH" == 'master' ] && [ "$TRAVIS_PU
                 \"draft\": false
             }"
         echo $JSON_DATA
-        curl -v --data "$JSON_DATA" https://api.github.com/repos/gchq/$repoId/releases?access_token=$GITHUB_TOKEN
 
+        curl -v -H "Authorization: token $GITHUB_TOKEN" --data "$JSON_DATA" https://api.github.com/repos/gchq/$repoId/releases
+        
         echo ""
         echo "--------------------------------------"
         echo "Merging into develop and updating pom version"

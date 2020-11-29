@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package uk.gov.gchq.gaffer.graph.hook;
 
 import com.google.common.collect.Sets;
 import org.hamcrest.core.IsCollectionContaining;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import uk.gov.gchq.gaffer.commonutil.exception.UnauthorisedException;
 import uk.gov.gchq.gaffer.named.operation.AddNamedOperation;
@@ -36,15 +36,17 @@ import uk.gov.gchq.gaffer.operation.impl.get.GetElements;
 import uk.gov.gchq.gaffer.store.Context;
 import uk.gov.gchq.gaffer.user.User;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-
 
 public class OperationAuthoriserTest extends GraphHookTest<OperationAuthoriser> {
     private static final String OP_AUTHS_PATH = "/opAuthoriser.json";
@@ -364,7 +366,8 @@ public class OperationAuthoriserTest extends GraphHookTest<OperationAuthoriser> 
     }
 
     @Test
-    public void shouldHandleNestedOperationChain(){}
+    public void shouldHandleNestedOperationChain() {
+    }
 
     @Override
     protected OperationAuthoriser getTestObject() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,12 @@ package uk.gov.gchq.gaffer.federatedstore;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import uk.gov.gchq.gaffer.accumulostore.AccumuloProperties;
 import uk.gov.gchq.gaffer.accumulostore.SingleUseAccumuloStore;
 import uk.gov.gchq.gaffer.cache.CacheServiceLoader;
 import uk.gov.gchq.gaffer.cache.impl.HashMapCacheService;
@@ -48,11 +49,9 @@ import uk.gov.gchq.gaffer.graph.GraphSerialisable;
 import uk.gov.gchq.gaffer.jsonserialisation.JSONSerialiser;
 import uk.gov.gchq.gaffer.operation.Operation;
 import uk.gov.gchq.gaffer.operation.OperationException;
+import uk.gov.gchq.gaffer.operation.impl.OperationImpl;
 import uk.gov.gchq.gaffer.operation.impl.add.AddElements;
 import uk.gov.gchq.gaffer.operation.impl.get.GetAllElements;
-import uk.gov.gchq.gaffer.serialisation.IntegerSerialiser;
-import uk.gov.gchq.gaffer.serialisation.implementation.MultiSerialiser;
-import uk.gov.gchq.gaffer.serialisation.implementation.StringSerialiser;
 import uk.gov.gchq.gaffer.store.Context;
 import uk.gov.gchq.gaffer.store.StoreException;
 import uk.gov.gchq.gaffer.store.StoreProperties;
@@ -63,7 +62,6 @@ import uk.gov.gchq.gaffer.store.operation.GetSchema;
 import uk.gov.gchq.gaffer.store.operation.GetTraits;
 import uk.gov.gchq.gaffer.store.schema.Schema;
 import uk.gov.gchq.gaffer.store.schema.Schema.Builder;
-import uk.gov.gchq.gaffer.store.schema.TypeDefinition;
 import uk.gov.gchq.gaffer.user.StoreUser;
 import uk.gov.gchq.gaffer.user.User;
 
@@ -72,17 +70,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static uk.gov.gchq.gaffer.operation.export.graph.handler.GraphDelegate.GRAPH_ID_S_CANNOT_BE_CREATED_WITHOUT_DEFINED_KNOWN_S;
 import static uk.gov.gchq.gaffer.operation.export.graph.handler.GraphDelegate.SCHEMA_COULD_NOT_BE_FOUND_IN_THE_GRAPH_LIBRARY_WITH_ID_S;
 import static uk.gov.gchq.gaffer.operation.export.graph.handler.GraphDelegate.STORE_PROPERTIES_COULD_NOT_BE_FOUND_IN_THE_GRAPH_LIBRARY_WITH_ID_S;
@@ -100,17 +99,17 @@ import static uk.gov.gchq.gaffer.user.StoreUser.testUser;
 public class FederatedStoreTest {
     public static final String ID_SCHEMA_ENTITY = "basicEntitySchema";
     public static final String ID_SCHEMA_EDGE = "basicEdgeSchema";
-    public static final String ID_PROPS_ACC_1 = "mockAccProps1";
-    public static final String ID_PROPS_ACC_2 = "mockAccProps2";
-    public static final String ID_PROPS_ACC_ALT = "mockAccProps3";
+    public static final String ID_PROPS_ACC_1 = "miniAccProps1";
+    public static final String ID_PROPS_ACC_2 = "miniAccProps2";
+    public static final String ID_PROPS_ACC_ALT = "miniAccProps3";
     public static final String INVALID = "invalid";
     private static final String FEDERATED_STORE_ID = "testFederatedStoreId";
-    private static final String ACC_ID_1 = "mockAccGraphId1";
-    private static final String ACC_ID_2 = "mockAccGraphId2";
-    private static final String MAP_ID_1 = "mockMapGraphId1";
-    private static final String PATH_ACC_STORE_PROPERTIES_1 = "properties/singleUseMockAccStore.properties";
-    private static final String PATH_ACC_STORE_PROPERTIES_2 = "properties/singleUseMockAccStore.properties";
-    private static final String PATH_ACC_STORE_PROPERTIES_ALT = "properties/singleUseMockAccStoreAlt.properties";
+    private static final String ACC_ID_1 = "miniAccGraphId1";
+    private static final String ACC_ID_2 = "miniAccGraphId2";
+    private static final String MAP_ID_1 = "miniMapGraphId1";
+    private static final String PATH_ACC_STORE_PROPERTIES_1 = "properties/singleUseAccumuloStore.properties";
+    private static final String PATH_ACC_STORE_PROPERTIES_2 = "properties/singleUseAccumuloStore.properties";
+    private static final String PATH_ACC_STORE_PROPERTIES_ALT = "properties/singleUseAccumuloStoreAlt.properties";
     private static final String PATH_BASIC_ENTITY_SCHEMA_JSON = "schema/basicEntitySchema.json";
     private static final String PATH_ENTITY_A_SCHEMA_JSON = "schema/entityASchema.json";
     private static final String PATH_ENTITY_B_SCHEMA_JSON = "schema/entityBSchema.json";
@@ -130,20 +129,14 @@ public class FederatedStoreTest {
     private HashMapGraphLibrary library;
     private Context userContext;
     private User blankUser;
+    private IgnoreOptions ignore;
 
-    @Test
-    public void shouldUseMulti() throws Exception {
-        System.out.println(new String(JSONSerialiser.serialise(
-                new Schema.Builder().type("ExampleType", new TypeDefinition.Builder()
-                        .clazz(String.class)
-                        .serialiser(new MultiSerialiser()
-                                .addSerialiser((byte) 0, new StringSerialiser(), String.class)
-                                .addSerialiser((byte) 1, new IntegerSerialiser(), Integer.class))
-                        .build()).build()
-                , true)));
-    }
+    private static final Class CURRENT_CLASS = new Object() { }.getClass().getEnclosingClass();
+    private static final AccumuloProperties PROPERTIES_1 = AccumuloProperties.loadStoreProperties(StreamUtil.openStream(CURRENT_CLASS, PATH_ACC_STORE_PROPERTIES_1));
+    private static final AccumuloProperties PROPERTIES_2 = AccumuloProperties.loadStoreProperties(StreamUtil.openStream(CURRENT_CLASS, PATH_ACC_STORE_PROPERTIES_2));
+    private static final AccumuloProperties PROPERTIES_ALT = AccumuloProperties.loadStoreProperties(StreamUtil.openStream(CURRENT_CLASS, PATH_ACC_STORE_PROPERTIES_ALT));
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         clearCache();
         federatedProperties = new FederatedStoreProperties();
@@ -151,9 +144,9 @@ public class FederatedStoreTest {
 
         clearLibrary();
         library = new HashMapGraphLibrary();
-        library.addProperties(ID_PROPS_ACC_1, getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_1));
-        library.addProperties(ID_PROPS_ACC_2, getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_2));
-        library.addProperties(ID_PROPS_ACC_ALT, getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT));
+        library.addProperties(ID_PROPS_ACC_1, PROPERTIES_1);
+        library.addProperties(ID_PROPS_ACC_2, PROPERTIES_2);
+        library.addProperties(ID_PROPS_ACC_ALT, PROPERTIES_ALT);
         library.addSchema(ID_SCHEMA_EDGE, getSchemaFromPath(PATH_BASIC_EDGE_SCHEMA_JSON));
         library.addSchema(ID_SCHEMA_ENTITY, getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON));
 
@@ -163,15 +156,25 @@ public class FederatedStoreTest {
 
         userContext = new Context(blankUser());
         blankUser = blankUser();
+
+        ignore = new IgnoreOptions();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
-        assertEquals("Library has changed: " + ID_PROPS_ACC_1, library.getProperties(ID_PROPS_ACC_1), getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_1));
-        assertEquals("Library has changed: " + ID_PROPS_ACC_2, library.getProperties(ID_PROPS_ACC_2), getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_2));
-        assertEquals("Library has changed: " + ID_PROPS_ACC_ALT, library.getProperties(ID_PROPS_ACC_ALT), getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT));
-        assertEquals("Library has changed: " + ID_SCHEMA_EDGE, new String(library.getSchema(ID_SCHEMA_EDGE).toJson(false), CommonConstants.UTF_8), new String(getSchemaFromPath(PATH_BASIC_EDGE_SCHEMA_JSON).toJson(false), CommonConstants.UTF_8));
-        assertEquals("Library has changed: " + ID_SCHEMA_ENTITY, new String(library.getSchema(ID_SCHEMA_ENTITY).toJson(false), CommonConstants.UTF_8), new String(getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON).toJson(false), CommonConstants.UTF_8));
+        assertEquals(library.getProperties(ID_PROPS_ACC_1), PROPERTIES_1,
+                "Library has changed: " + ID_PROPS_ACC_1);
+        assertEquals(library.getProperties(ID_PROPS_ACC_2), PROPERTIES_2,
+                "Library has changed: " + ID_PROPS_ACC_2);
+        assertEquals(library.getProperties(ID_PROPS_ACC_ALT), PROPERTIES_ALT,
+                "Library has changed: " + ID_PROPS_ACC_ALT);
+        assertEquals(new String(library.getSchema(ID_SCHEMA_EDGE).toJson(false), CommonConstants.UTF_8),
+                new String(getSchemaFromPath(PATH_BASIC_EDGE_SCHEMA_JSON).toJson(false), CommonConstants.UTF_8),
+                "Library has changed: " + ID_SCHEMA_EDGE);
+        assertEquals(new String(library.getSchema(ID_SCHEMA_ENTITY).toJson(false), CommonConstants.UTF_8),
+                new String(getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON).toJson(false), CommonConstants.UTF_8),
+                "Library has changed: " + ID_SCHEMA_ENTITY);
+
         clearLibrary();
         clearCache();
     }
@@ -179,13 +182,13 @@ public class FederatedStoreTest {
     @Test
     public void shouldLoadGraphsWithIds() throws Exception {
         // When
-        int before = store.getGraphs(blankUser, null).size();
+        int before = store.getGraphs(blankUser, null, ignore).size();
 
         addGraphWithIds(ACC_ID_2, ID_PROPS_ACC_2, ID_SCHEMA_EDGE);
         addGraphWithIds(ACC_ID_1, ID_PROPS_ACC_1, ID_SCHEMA_ENTITY);
 
         // Then
-        Collection<Graph> graphs = store.getGraphs(blankUser, null);
+        Collection<Graph> graphs = store.getGraphs(blankUser, null, ignore);
         int after = graphs.size();
         assertEquals(0, before);
         assertEquals(2, after);
@@ -272,9 +275,20 @@ public class FederatedStoreTest {
         }
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void shouldDoUnhandledOperation() throws Exception {
-        store.doUnhandledOperation(null, null);
+    @Test
+    public void shouldThrowAppropriateExceptionWhenHandlingAnUnsupportedOperation() {
+        // Given
+        Operation op = new OperationImpl();
+        // When
+        try {
+            store.handleOperation(op, new Context());
+            fail("Exception expected");
+        } catch (final OperationException e) {
+            fail("Expected an UnsupportedOperationException rather than an OperationException");
+        } catch (final UnsupportedOperationException e) {
+            // Then
+            assertEquals("Operation class uk.gov.gchq.gaffer.operation.impl.OperationImpl is not supported by the FederatedStore.", e.getMessage());
+        }
     }
 
     @Test
@@ -285,7 +299,7 @@ public class FederatedStoreTest {
         Set<StoreTrait> before = store.getTraits();
 
         // When
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
 
         Set<StoreTrait> after = store.getTraits();
         assertEquals(values().length, before.size());
@@ -296,9 +310,9 @@ public class FederatedStoreTest {
     @Test
     public void shouldUpdateSchemaWhenNewGraphIsAdded() throws Exception {
         // Given
-        addGraphWithPaths(ACC_ID_1, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_1, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
         Schema before = store.getSchema((Operation) null, blankUser);
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
         Schema after = store.getSchema((Operation) null, blankUser);
         // Then
         assertNotEquals(before, after);
@@ -307,9 +321,9 @@ public class FederatedStoreTest {
     @Test
     public void shouldUpdateSchemaWhenNewGraphIsRemoved() throws Exception {
         // Given
-        addGraphWithPaths(ACC_ID_1, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_1, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
         Schema was = store.getSchema((Operation) null, blankUser);
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
 
         Schema before = store.getSchema((Operation) null, blankUser);
 
@@ -325,7 +339,7 @@ public class FederatedStoreTest {
     public void shouldFailWithIncompleteSchema() throws Exception {
         // When / Then
         try {
-            addGraphWithPaths(ACC_ID_1, PATH_ACC_STORE_PROPERTIES_ALT, PATH_INCOMPLETE_SCHEMA);
+            addGraphWithPaths(ACC_ID_1, PROPERTIES_ALT, PATH_INCOMPLETE_SCHEMA);
             fail(EXCEPTION_NOT_THROWN);
         } catch (final Exception e) {
             assertContains(e, FederatedAddGraphHandler.ERROR_ADDING_GRAPH_GRAPH_ID_S, ACC_ID_1);
@@ -335,11 +349,11 @@ public class FederatedStoreTest {
     @Test
     public void shouldTakeCompleteSchemaFromTwoFiles() throws Exception {
         // Given
-        int before = store.getGraphs(blankUser, null).size();
-        addGraphWithPaths(ACC_ID_1, PATH_ACC_STORE_PROPERTIES_ALT, PATH_INCOMPLETE_SCHEMA, PATH_INCOMPLETE_SCHEMA_PART_2);
+        int before = store.getGraphs(blankUser, null, ignore).size();
+        addGraphWithPaths(ACC_ID_1, PROPERTIES_ALT, PATH_INCOMPLETE_SCHEMA, PATH_INCOMPLETE_SCHEMA_PART_2);
 
         // When
-        int after = store.getGraphs(blankUser, null).size();
+        int after = store.getGraphs(blankUser, null, ignore).size();
 
         // Then
         assertEquals(0, before);
@@ -349,13 +363,13 @@ public class FederatedStoreTest {
     @Test
     public void shouldAddTwoGraphs() throws Exception {
         // Given
-        int sizeBefore = store.getGraphs(blankUser, null).size();
+        int sizeBefore = store.getGraphs(blankUser, null, ignore).size();
 
         // When
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
-        addGraphWithPaths(ACC_ID_1, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_1, PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
 
-        int sizeAfter = store.getGraphs(blankUser, null).size();
+        int sizeAfter = store.getGraphs(blankUser, null, ignore).size();
 
         // Then
         assertEquals(0, sizeBefore);
@@ -377,7 +391,7 @@ public class FederatedStoreTest {
                 .schema(new Schema())
                 .isPublic(true)
                 .graphId(ACC_ID_1)
-                .storeProperties(StoreProperties.loadStoreProperties("/properties/singleUseMockAccStore.properties"))
+                .storeProperties(PROPERTIES_1)
                 .build(), new Context(testUser()));
 
         final Set<StoreTrait> afterAcc = store.getTraits(getTraits, userContext);
@@ -420,7 +434,7 @@ public class FederatedStoreTest {
     @Test
     public void shouldContainNoElements() throws Exception {
         // When
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
         Set<Element> after = getElements();
 
         // Then
@@ -430,7 +444,7 @@ public class FederatedStoreTest {
     @Test
     public void shouldAddEdgesToOneGraph() throws Exception {
         // Given
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
 
         AddElements op = new AddElements.Builder()
                 .input(new Edge.Builder()
@@ -451,8 +465,8 @@ public class FederatedStoreTest {
     @Test
     public void shouldReturnGraphIds() throws Exception {
         // Given
-        addGraphWithPaths(ACC_ID_1, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_1, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
 
         // When
         Collection<String> allGraphIds = store.getAllGraphIds(blankUser);
@@ -467,7 +481,7 @@ public class FederatedStoreTest {
     @Test
     public void shouldUpdateGraphIds() throws Exception {
         // Given
-        addGraphWithPaths(ACC_ID_1, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_1, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
 
 
         // When
@@ -501,7 +515,7 @@ public class FederatedStoreTest {
     @Test
     public void shouldGetAllGraphIdsInUnmodifiableSet() throws Exception {
         // Given
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
 
         // When / Then
         Collection<String> allGraphIds = store.getAllGraphIds(blankUser);
@@ -526,7 +540,7 @@ public class FederatedStoreTest {
         final Schema unusedMock = Mockito.mock(Schema.class);
         // When
         store.initialise(FEDERATED_STORE_ID, unusedMock, federatedProperties);
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
         // Then
         Mockito.verifyNoMoreInteractions(unusedMock);
     }
@@ -537,12 +551,12 @@ public class FederatedStoreTest {
         library.add(ACC_ID_2, library.getSchema(ID_SCHEMA_ENTITY), library.getProperties(ID_PROPS_ACC_2));
 
         // When
-        final int before = store.getGraphs(blankUser, null).size();
+        final int before = store.getGraphs(blankUser, null, ignore).size();
         store.execute(new AddGraph.Builder()
                 .graphId(ACC_ID_2)
                 .build(), new Context(blankUser));
 
-        final int after = store.getGraphs(blankUser, null).size();
+        final int after = store.getGraphs(blankUser, null, ignore).size();
 
         // Then
         assertEquals(0, before);
@@ -561,8 +575,8 @@ public class FederatedStoreTest {
 
 
         // Then
-        assertEquals(1, store.getGraphs(blankUser, null).size());
-        assertTrue(library.getProperties(ID_PROPS_ACC_ALT).equals(getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT)));
+        assertEquals(1, store.getGraphs(blankUser, null, ignore).size());
+        assertTrue(library.getProperties(ID_PROPS_ACC_ALT).equals(PROPERTIES_ALT));
     }
 
     @Test
@@ -570,14 +584,14 @@ public class FederatedStoreTest {
         // When
         store.execute(new AddGraph.Builder()
                 .graphId(ACC_ID_2)
-                .storeProperties(getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT))
+                .storeProperties(PROPERTIES_ALT)
                 .isPublic(true)
                 .parentSchemaIds(Lists.newArrayList(ID_SCHEMA_ENTITY))
                 .build(), userContext);
 
 
         // Then
-        assertEquals(1, store.getGraphs(blankUser, null).size());
+        assertEquals(1, store.getGraphs(blankUser, null, ignore).size());
         assertTrue(library.getSchema(ID_SCHEMA_ENTITY).toString().equals(getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON).toString()));
     }
 
@@ -587,17 +601,18 @@ public class FederatedStoreTest {
         addGraphWithIds(ACC_ID_2, ID_PROPS_ACC_ALT, ID_SCHEMA_ENTITY);
 
         // Then
-        assertEquals(1, store.getGraphs(blankUser, null).size());
-        Graph graph = store.getGraphs(blankUser, ACC_ID_2).iterator().next();
+        assertEquals(1, store.getGraphs(blankUser, null, ignore).size());
+        Graph graph = store.getGraphs(blankUser, ACC_ID_2, ignore).iterator().next();
         assertEquals(getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON).toString(), graph.getSchema().toString());
-        assertEquals(getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT), graph.getStoreProperties());
+        assertEquals(PROPERTIES_ALT, graph.getStoreProperties());
 
     }
 
     @Test
     public void shouldAddGraphWithPropertiesFromGraphLibraryOverridden() throws Exception {
         // Given
-        assertFalse(KEY_DOES_NOT_BELONG, library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY));
+        assertFalse(library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY),
+                KEY_DOES_NOT_BELONG);
 
         // When
         Builder schema = new Builder();
@@ -607,18 +622,18 @@ public class FederatedStoreTest {
 
         store.execute(new AddGraph.Builder()
                 .graphId(ACC_ID_2)
-                .storeProperties(getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT))
+                .storeProperties(PROPERTIES_ALT)
                 .parentPropertiesId(ID_PROPS_ACC_2)
                 .isPublic(true)
                 .schema(schema.build())
                 .build(), userContext);
 
         // Then
-        assertEquals(1, store.getGraphs(blankUser, null).size());
-        assertTrue(store.getGraphs(blankUser, null).iterator().next().getStoreProperties().containsKey(UNUSUAL_KEY));
-        assertFalse(KEY_DOES_NOT_BELONG, library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY));
-        assertTrue(store.getGraphs(blankUser, null).iterator().next().getStoreProperties().getProperties().getProperty(UNUSUAL_KEY) != null);
-
+        assertEquals(1, store.getGraphs(blankUser, null, ignore).size());
+        assertTrue(store.getGraphs(blankUser, null, ignore).iterator().next().getStoreProperties().containsKey(UNUSUAL_KEY));
+        assertFalse(library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY),
+                KEY_DOES_NOT_BELONG);
+        assertNotNull(store.getGraphs(blankUser, null, ignore).iterator().next().getStoreProperties().getProperties().getProperty(UNUSUAL_KEY));
     }
 
     @Test
@@ -633,14 +648,15 @@ public class FederatedStoreTest {
                 .build(), userContext);
 
         // Then
-        assertEquals(1, store.getGraphs(blankUser, null).size());
-        assertTrue(store.getGraphs(blankUser, null).iterator().next().getSchema().getEntityGroups().contains("BasicEntity"));
+        assertEquals(1, store.getGraphs(blankUser, null, ignore).size());
+        assertTrue(store.getGraphs(blankUser, null, ignore).iterator().next().getSchema().getEntityGroups().contains("BasicEntity"));
     }
 
     @Test
     public void shouldAddGraphWithPropertiesAndSchemaFromGraphLibraryOverridden() throws Exception {
         // Given
-        assertFalse(KEY_DOES_NOT_BELONG, library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY));
+        assertFalse(library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY),
+                KEY_DOES_NOT_BELONG);
 
         // When
         Builder tempSchema = new Builder();
@@ -651,24 +667,25 @@ public class FederatedStoreTest {
         store.execute(new AddGraph.Builder()
                 .graphId(ACC_ID_2)
                 .isPublic(true)
-                .storeProperties(getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT))
+                .storeProperties(PROPERTIES_ALT)
                 .parentPropertiesId(ID_PROPS_ACC_2)
                 .schema(tempSchema.build())
                 .parentSchemaIds(Lists.newArrayList(ID_SCHEMA_ENTITY))
                 .build(), userContext);
 
         // Then
-        assertEquals(1, store.getGraphs(blankUser, null).size());
-        assertTrue(store.getGraphs(blankUser, null).iterator().next().getStoreProperties().containsKey(UNUSUAL_KEY));
-        assertFalse(KEY_DOES_NOT_BELONG, library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY));
-        assertTrue(store.getGraphs(blankUser, null).iterator().next().getStoreProperties().getProperties().getProperty(UNUSUAL_KEY) != null);
-        assertTrue(store.getGraphs(blankUser, null).iterator().next().getSchema().getEntityGroups().contains("BasicEntity"));
+        assertEquals(1, store.getGraphs(blankUser, null, ignore).size());
+        assertTrue(store.getGraphs(blankUser, null, ignore).iterator().next().getStoreProperties().containsKey(UNUSUAL_KEY));
+        assertFalse(library.getProperties(ID_PROPS_ACC_2).containsKey(UNUSUAL_KEY),
+                KEY_DOES_NOT_BELONG);
+        assertNotNull(store.getGraphs(blankUser, null, ignore).iterator().next().getStoreProperties().getProperties().getProperty(UNUSUAL_KEY));
+        assertTrue(store.getGraphs(blankUser, null, ignore).iterator().next().getSchema().getEntityGroups().contains("BasicEntity"));
     }
 
     @Test
     public void shouldNotAllowOverridingOfKnownGraphInLibrary() throws Exception {
         // Given
-        library.add(ACC_ID_2, getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON), getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT));
+        library.add(ACC_ID_2, getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON), PROPERTIES_ALT);
 
         // When / Then
         try {
@@ -702,7 +719,7 @@ public class FederatedStoreTest {
                 .config(new GraphConfig.Builder()
                         .graphId(ACC_ID_2)
                         .build())
-                .properties(getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT))
+                .properties(PROPERTIES_ALT)
                 .schema(getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON))
                 .build());
 
@@ -735,7 +752,7 @@ public class FederatedStoreTest {
         final Collection<GraphSerialisable> unexpectedGraphs = graphLists.get(1);
 
         // When
-        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "mockGraphId1,mockGraphId2,mockGraphId4");
+        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "mockGraphId1,mockGraphId2,mockGraphId4", ignore);
 
         // Then
         assertTrue(returnedGraphs.size() == 3);
@@ -749,7 +766,7 @@ public class FederatedStoreTest {
         populateGraphs();
 
         // When
-        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, null);
+        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, null, ignore);
 
         // Then
         final Set<String> graphIds = returnedGraphs.stream().map(Graph::getGraphId).collect(Collectors.toSet());
@@ -762,7 +779,7 @@ public class FederatedStoreTest {
         populateGraphs();
 
         // When
-        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "mockGraphId0,mockGraphId1");
+        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "mockGraphId0,mockGraphId1", ignore);
 
         // Then
         final Set<String> graphIds = returnedGraphs.stream().map(Graph::getGraphId).collect(Collectors.toSet());
@@ -777,11 +794,11 @@ public class FederatedStoreTest {
         final Collection<GraphSerialisable> expectedGraphs = graphLists.get(0);
 
         // When
-        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "");
+        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "", ignore);
 
         // Then
-        assertTrue(returnedGraphs.toString(), returnedGraphs.isEmpty());
-        assertTrue(expectedGraphs.toString(), expectedGraphs.isEmpty());
+        assertTrue(returnedGraphs.isEmpty(), returnedGraphs.toString());
+        assertTrue(expectedGraphs.isEmpty(), expectedGraphs.toString());
     }
 
     @Test
@@ -792,7 +809,7 @@ public class FederatedStoreTest {
         final Collection<GraphSerialisable> unexpectedGraphs = graphLists.get(1);
 
         // When
-        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, ",mockGraphId2,mockGraphId4");
+        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, ",mockGraphId2,mockGraphId4", ignore);
 
         // Then
         assertTrue(returnedGraphs.size() == 2);
@@ -813,7 +830,7 @@ public class FederatedStoreTest {
 
         addGraphWithIds(ACC_ID_2, ID_PROPS_ACC_2, ID_SCHEMA_ENTITY);
 
-        library.add(ACC_ID_2, getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON), getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT));
+        library.add(ACC_ID_2, getSchemaFromPath(PATH_BASIC_ENTITY_SCHEMA_JSON), PROPERTIES_ALT);
 
         // When
         int before = 0;
@@ -909,7 +926,7 @@ public class FederatedStoreTest {
         try {
             store.execute(new AddGraph.Builder()
                     .graphId(ACC_ID_2)
-                    .storeProperties(getPropertiesFromPath(PATH_ACC_STORE_PROPERTIES_ALT))
+                    .storeProperties(PROPERTIES_ALT)
                     .isPublic(true)
                     .parentSchemaIds(Lists.newArrayList(ID_SCHEMA_ENTITY))
                     .build(), userContext);
@@ -928,10 +945,10 @@ public class FederatedStoreTest {
         final Collection<GraphSerialisable> unexpectedGraphs = graphLists.get(1);
 
         // When
-        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "mockGraphId1");
+        final Collection<Graph> returnedGraphs = store.getGraphs(blankUser, "mockGraphId1", ignore);
 
         // Then
-        assertTrue(returnedGraphs.size() == 1);
+        assertEquals(1, returnedGraphs.size());
         assertTrue(returnedGraphs.containsAll(toGraphs(expectedGraphs)));
         assertFalse(checkUnexpected(toGraphs(unexpectedGraphs), returnedGraphs));
     }
@@ -964,7 +981,7 @@ public class FederatedStoreTest {
         //add something so it will be in the cache
         GraphSerialisable graphToAdd = new GraphSerialisable.Builder()
                 .config(new GraphConfig(ACC_ID_2))
-                .properties(StreamUtil.openStream(FederatedStoreTest.class, PATH_ACC_STORE_PROPERTIES_ALT))
+                .properties(PROPERTIES_ALT)
                 .schema(StreamUtil.openStream(FederatedStoreTest.class, PATH_BASIC_EDGE_SCHEMA_JSON))
                 .build();
 
@@ -980,7 +997,8 @@ public class FederatedStoreTest {
         store.initialise(FEDERATED_STORE_ID, null, federatedProperties);
 
         //check the graph is already in there from the cache
-        assertTrue("Keys: " + CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME) + " did not contain " + ACC_ID_2, CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME).contains(ACC_ID_2));
+        assertTrue(CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME).contains(ACC_ID_2),
+                "Keys: " + CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME) + " did not contain " + ACC_ID_2);
         assertEquals(1, store.getAllGraphIds(blankUser).size());
     }
 
@@ -1001,7 +1019,7 @@ public class FederatedStoreTest {
         // Given
         GraphSerialisable graphToAdd = new GraphSerialisable.Builder()
                 .config(new GraphConfig(ACC_ID_1))
-                .properties(StreamUtil.openStream(FederatedStoreTest.class, PATH_ACC_STORE_PROPERTIES_ALT))
+                .properties(PROPERTIES_ALT)
                 .schema(StreamUtil.openStream(FederatedStoreTest.class, PATH_BASIC_EDGE_SCHEMA_JSON))
                 .build();
 
@@ -1037,7 +1055,7 @@ public class FederatedStoreTest {
         // Given
         GraphSerialisable graphToAdd = new GraphSerialisable.Builder()
                 .config(new GraphConfig(ACC_ID_1))
-                .properties(StreamUtil.openStream(FederatedStoreTest.class, PATH_ACC_STORE_PROPERTIES_ALT))
+                .properties(PROPERTIES_ALT)
                 .schema(StreamUtil.openStream(FederatedStoreTest.class, PATH_BASIC_EDGE_SCHEMA_JSON))
                 .build();
 
@@ -1045,10 +1063,10 @@ public class FederatedStoreTest {
         store.addGraphs(null, StoreUser.TEST_USER, true, graphToAdd);
 
         // Then
-        assertEquals(1, store.getGraphs(blankUser, ACC_ID_1).size());
+        assertEquals(1, store.getGraphs(blankUser, ACC_ID_1, ignore).size());
 
         // When
-        Collection<Graph> storeGraphs = store.getGraphs(blankUser, null);
+        Collection<Graph> storeGraphs = store.getGraphs(blankUser, null, ignore);
 
         // Then
         assertTrue(CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME).contains(ACC_ID_1));
@@ -1072,7 +1090,7 @@ public class FederatedStoreTest {
         for (int i = 0; i < 10; i++) {
             graphsToAdd.add(new GraphSerialisable.Builder()
                     .config(new GraphConfig(ACC_ID_1 + i))
-                    .properties(StreamUtil.openStream(FederatedStoreTest.class, PATH_ACC_STORE_PROPERTIES_ALT))
+                    .properties(PROPERTIES_ALT)
                     .schema(StreamUtil.openStream(FederatedStoreTest.class, PATH_BASIC_EDGE_SCHEMA_JSON))
                     .build());
         }
@@ -1099,14 +1117,14 @@ public class FederatedStoreTest {
     public void shouldAddAGraphRemoveAGraphAndBeAbleToReuseTheGraphId() throws Exception {
         // Given
         // When
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_ENTITY_SCHEMA_JSON);
         store.execute(new RemoveGraph.Builder()
                 .graphId(ACC_ID_2)
                 .build(), userContext);
-        addGraphWithPaths(ACC_ID_2, PATH_ACC_STORE_PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
+        addGraphWithPaths(ACC_ID_2, PROPERTIES_ALT, PATH_BASIC_EDGE_SCHEMA_JSON);
 
         // Then
-        final Collection<Graph> graphs = store.getGraphs(userContext.getUser(), ACC_ID_2);
+        final Collection<Graph> graphs = store.getGraphs(userContext.getUser(), ACC_ID_2, ignore);
         assertEquals(1, graphs.size());
         JsonAssert.assertEquals(
                 JSONSerialiser.serialise(Schema.fromJson(StreamUtil.openStream(getClass(), PATH_BASIC_EDGE_SCHEMA_JSON))),
@@ -1126,7 +1144,7 @@ public class FederatedStoreTest {
         //add something so it will be in the cache
         GraphSerialisable graphToAdd = new GraphSerialisable.Builder()
                 .config(new GraphConfig(ACC_ID_1))
-                .properties(StreamUtil.openStream(FederatedStoreTest.class, PATH_ACC_STORE_PROPERTIES_1))
+                .properties(PROPERTIES_1)
                 .schema(StreamUtil.openStream(FederatedStoreTest.class, PATH_BASIC_EDGE_SCHEMA_JSON))
                 .build();
 
@@ -1136,7 +1154,7 @@ public class FederatedStoreTest {
         assertEquals(1, store.getAllGraphIds(blankUser).size());
         //check is in the cache
         assertTrue(CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME).contains(ACC_ID_1));
-        //check isn't in the library
+        //check isn't in the LIBRARY
         assertNull(store.getGraphLibrary().get(ACC_ID_1));
 
         //restart the store
@@ -1147,7 +1165,8 @@ public class FederatedStoreTest {
         store.initialise(FEDERATED_STORE_ID, null, federatedProperties);
 
         //check is in the cache still
-        assertTrue("Keys: " + CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME) + " did not contain " + ACC_ID_1, CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME).contains(ACC_ID_1));
+        assertTrue(CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME).contains(ACC_ID_1),
+                "Keys: " + CacheServiceLoader.getService().getAllKeysFromCache(CACHE_SERVICE_NAME) + " did not contain " + ACC_ID_1);
         //check is in the store from the cache
         assertEquals(1, store.getAllGraphIds(blankUser).size());
         //check the graph isn't in the GraphLibrary
@@ -1171,7 +1190,7 @@ public class FederatedStoreTest {
                     .config(new GraphConfig.Builder()
                             .graphId("mockGraphId" + i)
                             .build())
-                    .properties(StreamUtil.openStream(FederatedStoreTest.class, PATH_ACC_STORE_PROPERTIES_ALT))
+                    .properties(PROPERTIES_ALT)
                     .schema(StreamUtil.openStream(FederatedStoreTest.class, PATH_BASIC_ENTITY_SCHEMA_JSON))
                     .build();
             // Odd ids are disabled by default
@@ -1207,7 +1226,7 @@ public class FederatedStoreTest {
     private void assertContains(final Throwable e, final String format, final String... s) {
         final String expectedStr = String.format(format, s);
         boolean contains = e.getMessage().contains(expectedStr);
-        assertTrue("\"" + e.getMessage() + "\" does not contain string \"" + expectedStr + "\"", contains);
+        assertTrue(contains, "\"" + e.getMessage() + "\" does not contain string \"" + expectedStr + "\"");
     }
 
     private void addGraphWithIds(final String graphId, final String propertiesId, final String... schemaId) throws OperationException {
@@ -1220,7 +1239,7 @@ public class FederatedStoreTest {
                 .build(), userContext);
     }
 
-    private void addGraphWithPaths(final String graphId, final String propertiesPath, final String... schemaPath) throws OperationException {
+    private void addGraphWithPaths(final String graphId, final StoreProperties properties, final String... schemaPath) throws OperationException {
         Schema.Builder schema = new Builder();
         for (String path : schemaPath) {
             schema.merge(getSchemaFromPath(path));
@@ -1228,7 +1247,7 @@ public class FederatedStoreTest {
 
         store.execute(new AddGraph.Builder()
                 .graphId(graphId)
-                .storeProperties(getPropertiesFromPath(propertiesPath))
+                .storeProperties(properties)
                 .isPublic(true)
                 .schema(schema.build())
                 .build(), userContext);
@@ -1267,7 +1286,8 @@ public class FederatedStoreTest {
             fail("exception expected");
         } catch (final SchemaException e) {
             //then
-            assertTrue(e.getMessage(), Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches());
+            assertTrue(Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches(),
+                    e.getMessage());
         }
 
         //when
@@ -1295,7 +1315,8 @@ public class FederatedStoreTest {
             fail("exception expected");
         } catch (final SchemaException e) {
             //then
-            assertTrue(e.getMessage(), Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches());
+            assertTrue(Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches(),
+                    e.getMessage());
         }
 
         //when
@@ -1325,7 +1346,8 @@ public class FederatedStoreTest {
             fail("exception expected");
         } catch (final SchemaException e) {
             //then
-            assertTrue(e.getMessage(), Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches());
+            assertTrue(Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches(),
+                    e.getMessage());
         }
 
         //when
@@ -1356,7 +1378,8 @@ public class FederatedStoreTest {
             fail("exception expected");
         } catch (final SchemaException e) {
             //then
-            assertTrue(e.getMessage(), Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches());
+            assertTrue(Pattern.compile("Unable to merge the schemas for all of your federated graphs: \\[graph., graph.\\]\\. You can limit which graphs to query for using the operation option: gaffer\\.federatedstore\\.operation\\.graphIds").matcher(e.getMessage()).matches(),
+                    e.getMessage());
         }
 
         try {
@@ -1367,8 +1390,8 @@ public class FederatedStoreTest {
             //then
             assertEquals("Operation chain is invalid. Validation errors: \n" +
                     "View is not valid for graphIds:[graphA]\n" +
-                    "View for operation uk.gov.gchq.gaffer.operation.impl.get.GetAllElements is not valid. \n" +
-                    "Entity group entityB does not exist in the schema", e.getMessage());
+                    "(graphId: graphA) View for operation uk.gov.gchq.gaffer.operation.impl.get.GetAllElements is not valid. \n" +
+                    "(graphId: graphA) Entity group entityB does not exist in the schema", e.getMessage());
         }
 
         try {
@@ -1379,11 +1402,11 @@ public class FederatedStoreTest {
             //then
             assertEquals("Operation chain is invalid. Validation errors: \n" +
                     "View is not valid for graphIds:[graphB]\n" +
-                    "View for operation uk.gov.gchq.gaffer.operation.impl.get.GetAllElements is not valid. \n" +
-                    "Entity group entityA does not exist in the schema", e.getMessage());
+                    "(graphId: graphB) View for operation uk.gov.gchq.gaffer.operation.impl.get.GetAllElements is not valid. \n" +
+                    "(graphId: graphB) Entity group entityA does not exist in the schema", e.getMessage());
         }
 
-        addGraphWithPaths("graphC", PATH_ACC_STORE_PROPERTIES_1, PATH_ENTITY_B_SCHEMA_JSON);
+        addGraphWithPaths("graphC", PROPERTIES_1, PATH_ENTITY_B_SCHEMA_JSON);
 
         try {
             //when
@@ -1393,13 +1416,15 @@ public class FederatedStoreTest {
             //then
             assertEquals("Operation chain is invalid. Validation errors: \n" +
                     "View is not valid for graphIds:[graphB,graphC]\n" +
-                    "View for operation uk.gov.gchq.gaffer.operation.impl.get.GetAllElements is not valid. \n" +
-                    "Entity group entityA does not exist in the schema", e.getMessage());
+                    "(graphId: graphB) View for operation uk.gov.gchq.gaffer.operation.impl.get.GetAllElements is not valid. \n" +
+                    "(graphId: graphB) Entity group entityA does not exist in the schema\n" +
+                    "(graphId: graphC) View for operation uk.gov.gchq.gaffer.operation.impl.get.GetAllElements is not valid. \n" +
+                    "(graphId: graphC) Entity group entityA does not exist in the schema", e.getMessage());
         }
     }
 
     protected void addElementsToNewGraph(final Entity input, final String graphName, final String pathSchemaJson) throws OperationException {
-        addGraphWithPaths(graphName, PATH_ACC_STORE_PROPERTIES_1, pathSchemaJson);
+        addGraphWithPaths(graphName, PROPERTIES_1, pathSchemaJson);
         store.execute(new AddElements.Builder()
                 .input(input)
                 .option(FederatedStoreConstants.KEY_OPERATION_OPTIONS_GRAPH_IDS, graphName)
@@ -1408,15 +1433,22 @@ public class FederatedStoreTest {
 
     protected Entity getEntityB() {
         return new Entity.Builder()
-                    .group("entityB")
-                    .vertex(7)
-                    .build();
+                .group("entityB")
+                .vertex(7)
+                .build();
     }
 
     protected Entity getEntityA() {
         return new Entity.Builder()
-                    .group("entityA")
-                    .vertex("A")
-                    .build();
+                .group("entityA")
+                .vertex("A")
+                .build();
+    }
+
+    private class IgnoreOptions extends GetAllElements {
+        @Override
+        public void setOptions(final Map<String, String> options) {
+            //nothing
+        }
     }
 }

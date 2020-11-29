@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 Crown Copyright
+ * Copyright 2018-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,7 @@ public class GraphHooksIT extends AbstractStoreIT {
                         .build())
                 .description("named operation GetAllElements test query")
                 .name("GetAllElements test")
+                .labels(Arrays.asList("label 1", "Label 2"))
                 .overwrite(true)
                 .build();
 

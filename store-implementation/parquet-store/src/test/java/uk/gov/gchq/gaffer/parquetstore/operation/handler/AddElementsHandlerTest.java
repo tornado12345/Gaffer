@@ -1,5 +1,5 @@
 /*
- * Copyright 2018. Crown Copyright
+ * Copyright 2018-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
 package uk.gov.gchq.gaffer.parquetstore.operation.handler;
@@ -23,14 +23,13 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import scala.collection.JavaConversions$;
 import scala.collection.mutable.WrappedArray;
 
-import uk.gov.gchq.gaffer.commonutil.CommonTestConstants;
+import uk.gov.gchq.gaffer.commonutil.TestGroups;
 import uk.gov.gchq.gaffer.data.element.Edge;
 import uk.gov.gchq.gaffer.data.element.Element;
 import uk.gov.gchq.gaffer.data.element.Entity;
@@ -55,21 +54,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AddElementsHandlerTest {
-    @Rule
-    public final TemporaryFolder testFolder = new TemporaryFolder(CommonTestConstants.TMP_DIRECTORY);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Logger.getRootLogger().setLevel(Level.INFO);
     }
 
     @Test
-    public void testOnePartitionOneGroup() throws OperationException, IOException, StoreException {
+    public void testOnePartitionOneGroup(@TempDir java.nio.file.Path tempDir)
+            throws OperationException, IOException, StoreException {
         // Given
         final List<Element> elementsToAdd = new ArrayList<>();
         elementsToAdd.addAll(AggregateAndSortDataTest.generateData());
@@ -80,7 +78,7 @@ public class AddElementsHandlerTest {
         final Context context = new Context();
         final Schema schema = TestUtils.gafferSchema("schemaUsingLongVertexType");
         final ParquetStoreProperties storeProperties = new ParquetStoreProperties();
-        final String testDir = testFolder.newFolder().getPath();
+        final String testDir = tempDir.toString();
         storeProperties.setDataDir(testDir + "/data");
         storeProperties.setTempFilesDir(testDir + "/tmpdata");
         final ParquetStore store = (ParquetStore) ParquetStore.createStore("graphId", schema, storeProperties);
@@ -97,13 +95,12 @@ public class AddElementsHandlerTest {
         assertTrue(fs.exists(snapshotPath));
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEntity"
         //   directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by vertex and date.
         final Row[] results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(40, results.length);
         for (int i = 0; i < 40; i++) {
@@ -128,7 +125,8 @@ public class AddElementsHandlerTest {
     }
 
     @Test
-    public void testOnePartitionAllGroups() throws IOException, OperationException, StoreException {
+    public void testOnePartitionAllGroups(@TempDir java.nio.file.Path tempDir)
+            throws IOException, OperationException, StoreException {
         // Given
         final List<Element> elementsToAdd = new ArrayList<>();
         //  - Data for TestGroups.ENTITY
@@ -159,7 +157,7 @@ public class AddElementsHandlerTest {
         final Context context = new Context();
         final Schema schema = TestUtils.gafferSchema("schemaUsingLongVertexType");
         final ParquetStoreProperties storeProperties = new ParquetStoreProperties();
-        final String testDir = testFolder.newFolder().getPath();
+        final String testDir = tempDir.toString();
         storeProperties.setDataDir(testDir + "/data");
         storeProperties.setTempFilesDir(testDir + "/tmpdata");
         final ParquetStore store = (ParquetStore) ParquetStore.createStore("graphId", schema, storeProperties);
@@ -176,13 +174,12 @@ public class AddElementsHandlerTest {
         assertTrue(fs.exists(snapshotPath));
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEntity"
         //   directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by vertex and date.
         Row[] results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(40, results.length);
         for (int i = 0; i < 40; i++) {
@@ -206,13 +203,12 @@ public class AddElementsHandlerTest {
         }
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEntity2"
         //   directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity2/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity2/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by vertex.
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEntity2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, "graph/group=BasicEntity2/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(4, results.length);
         checkEntityGroup2(WriteUnsortedDataTest.createEntityForEntityGroup_2(1L), results[0]);
@@ -221,15 +217,14 @@ public class AddElementsHandlerTest {
         checkEntityGroup2(WriteUnsortedDataTest.createEntityForEntityGroup_2(10000L), results[3]);
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEdge"
         //   directory and in the "reversed-group=BasicEdge" directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge/." + ParquetStore.getFile(0) + ".crc")));
-        assertTrue(fs.exists(new Path(snapshotPath, "reversed-group=BasicEdge/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "reversed-group=BasicEdge/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, true) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, true) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by source, destination, directed, date
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEdge/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(6, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup(1L, 2L, false, new Date(400L)),
@@ -246,8 +241,7 @@ public class AddElementsHandlerTest {
                 results[5]);
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "reversed-group=BasicEdge/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, true) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(6, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup(1L, 2L, false, new Date(400L)),
@@ -265,13 +259,12 @@ public class AddElementsHandlerTest {
 
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEdge2"
         //   directory and in the "reversed-group=BasicEdge2" directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by source, destination, directed
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(4, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(1L, 2000L, false), results[0]);
@@ -280,8 +273,7 @@ public class AddElementsHandlerTest {
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[3]);
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "reversed-group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, true) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(4, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[0]);
@@ -331,7 +323,8 @@ public class AddElementsHandlerTest {
     }
 
     @Test
-    public void testRepeatedCallsOfAddElementsHandler() throws IOException, OperationException, StoreException {
+    public void testRepeatedCallsOfAddElementsHandler(@TempDir java.nio.file.Path tempDir)
+            throws IOException, OperationException, StoreException {
         // Given
         final List<Element> elementsToAdd = new ArrayList<>();
         //  - Data for TestGroups.ENTITY
@@ -362,7 +355,7 @@ public class AddElementsHandlerTest {
         final Context context = new Context();
         final Schema schema = TestUtils.gafferSchema("schemaUsingLongVertexType");
         final ParquetStoreProperties storeProperties = new ParquetStoreProperties();
-        final String testDir = testFolder.newFolder().getPath();
+        final String testDir = tempDir.toString();
         storeProperties.setDataDir(testDir + "/data");
         storeProperties.setTempFilesDir(testDir + "/tmpdata");
         final ParquetStore store = (ParquetStore) ParquetStore.createStore("graphId", schema, storeProperties);
@@ -380,13 +373,12 @@ public class AddElementsHandlerTest {
         assertTrue(fs.exists(snapshotPath));
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEntity"
         //   directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by vertex and date.
         Row[] results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(40, results.length);
         for (int i = 0; i < 40; i++) {
@@ -410,13 +402,12 @@ public class AddElementsHandlerTest {
         }
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEntity2"
         //   directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity2/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity2/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by vertex.
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEntity2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(8, results.length);
         checkEntityGroup2(WriteUnsortedDataTest.createEntityForEntityGroup_2(1L), results[0]);
@@ -429,13 +420,12 @@ public class AddElementsHandlerTest {
         checkEntityGroup2(WriteUnsortedDataTest.createEntityForEntityGroup_2(10000L), results[7]);
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEdge"
         //   directory and in the "reversed-group=BasicEdge" directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by source, destination, directed, date
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEdge/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(6, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup(1L, 2L, false, new Date(400L), (short) 2),
@@ -452,8 +442,7 @@ public class AddElementsHandlerTest {
                 results[5]);
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "reversed-group=BasicEdge/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, true) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(6, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup(1L, 2L, false, new Date(400L), (short) 2),
@@ -470,13 +459,12 @@ public class AddElementsHandlerTest {
                 results[5]);
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEdge2"
         //   directory and in the "reversed-group=BasicEdge2" directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by source, destination, directed
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(8, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(1L, 2000L, false), results[0]);
@@ -489,8 +477,7 @@ public class AddElementsHandlerTest {
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[7]);
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "reversed-group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, true) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(8, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[0]);
@@ -517,13 +504,12 @@ public class AddElementsHandlerTest {
         assertTrue(fs.exists(snapshotPath));
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEntity"
         //   directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by vertex and date.
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEntity/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(40, results.length);
         for (int i = 0; i < 40; i++) {
@@ -547,13 +533,12 @@ public class AddElementsHandlerTest {
         }
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEntity2"
         //   directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity2/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEntity2/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by vertex.
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEntity2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.ENTITY_2, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(12, results.length);
         checkEntityGroup2(WriteUnsortedDataTest.createEntityForEntityGroup_2(1L), results[0]);
@@ -570,13 +555,12 @@ public class AddElementsHandlerTest {
         checkEntityGroup2(WriteUnsortedDataTest.createEntityForEntityGroup_2(10000L), results[11]);
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEdge"
         //   directory and in the "reversed-group=BasicEdge" directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by source, destination, directed, date
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEdge/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(6, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup(1L, 2L, false, new Date(400L), (short) 2),
@@ -593,8 +577,7 @@ public class AddElementsHandlerTest {
                 results[5]);
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "reversed-group=BasicEdge/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE, true) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(6, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup(1L, 2L, false, new Date(400L), (short) 2),
@@ -611,13 +594,12 @@ public class AddElementsHandlerTest {
                 results[5]);
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEdge2"
         //   directory and in the "reversed-group=BasicEdge2" directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by source, destination, directed
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(8, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(1L, 2000L, false), results[0]);
@@ -630,8 +612,7 @@ public class AddElementsHandlerTest {
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[7]);
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "reversed-group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, true) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(8, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[0]);
@@ -645,13 +626,12 @@ public class AddElementsHandlerTest {
 
         // - There should be 1 file named partition-0.parquet (and an associated .crc file) in the "group=BasicEdge2"
         //   directory and in the "reversed-group=BasicEdge2" directory.
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0))));
-        assertTrue(fs.exists(new Path(snapshotPath, "group=BasicEdge2/." + ParquetStore.getFile(0) + ".crc")));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0))));
+        assertTrue(fs.exists(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/." + ParquetStore.getFile(0) + ".crc")));
         // - The files should contain the data sorted by source, destination, directed
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, false) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(8, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(1L, 2000L, false), results[0]);
@@ -664,8 +644,7 @@ public class AddElementsHandlerTest {
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[7]);
         results = (Row[]) sparkSession
                 .read()
-                .option("mergeSchema", true)
-                .parquet(new Path(snapshotPath, "reversed-group=BasicEdge2/" + ParquetStore.getFile(0)).toString())
+                .parquet(new Path(snapshotPath, ParquetStore.getGroupSubDir(TestGroups.EDGE_2, true) + "/" + ParquetStore.getFile(0)).toString())
                 .collect();
         assertEquals(8, results.length);
         checkEdge(WriteUnsortedDataTest.createEdgeForEdgeGroup_2(10000L, 20L, true), results[0]);

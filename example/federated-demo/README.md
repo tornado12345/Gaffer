@@ -1,4 +1,4 @@
-Copyright 2017-2019 Crown Copyright
+Copyright 2017-2020 Crown Copyright
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ And to add an Accumulo graph execute this (or run addAccumuloEntitiesGraph.sh):
     "class": "uk.gov.gchq.gaffer.federatedstore.operation.AddGraph",
     "graphId": "accEntities",
     "storeProperties": {
-         "gaffer.store.class":"uk.gov.gchq.gaffer.accumulostore.MockAccumuloStore",
+         "gaffer.store.class":"uk.gov.gchq.gaffer.accumulostore.MiniAccumuloStore",
          "accumulo.instance":"someInstanceName",
          "accumulo.zookeepers":"aZookeeper",
          "accumulo.user":"user01",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,11 +54,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class AccumuloAggregationIT extends StandaloneIT {
-    private final String VERTEX = "vertex";
-    private final String PUBLIC_VISIBILITY = "publicVisibility";
-    private final String PRIVATE_VISIBILITY = "privateVisibility";
+    private static final String VERTEX = "vertex";
+    private static final String PUBLIC_VISIBILITY = "publicVisibility";
+    private static final String PRIVATE_VISIBILITY = "privateVisibility";
 
     private final User user = getUser();
+
+    private static final AccumuloProperties PROPERTIES = AccumuloProperties.loadStoreProperties(StreamUtil.storeProps(AccumuloStoreITs.class));
+
 
     @Test
     public void shouldOnlyAggregateVisibilityWhenGroupByIsNull() throws Exception {
@@ -691,6 +694,6 @@ public class AccumuloAggregationIT extends StandaloneIT {
 
     @Override
     public StoreProperties createStoreProperties() {
-        return AccumuloProperties.loadStoreProperties(StreamUtil.storeProps(AccumuloStoreITs.class));
+        return PROPERTIES;
     }
 }

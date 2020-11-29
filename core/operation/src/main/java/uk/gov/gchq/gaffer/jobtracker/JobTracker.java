@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import uk.gov.gchq.gaffer.user.User;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -39,11 +40,10 @@ public class JobTracker {
      * Add or update the job details relating to a job in the job tracker cache.
      *
      * @param jobDetail the job details to update
-     * @param user the user making the request
+     * @param user      the user making the request
      */
     public void addOrUpdateJob(final JobDetail jobDetail, final User user) {
         validateJobDetail(jobDetail);
-
         try {
             CacheServiceLoader.getService().putInCache(CACHE_NAME, jobDetail.getJobId(), jobDetail);
         } catch (final CacheOperationException e) {
@@ -55,8 +55,7 @@ public class JobTracker {
      * Get the details of a specific job.
      *
      * @param jobId the ID of the job to lookup
-     * @param user the user making the request to the job tracker
-     *
+     * @param user  the user making the request to the job tracker
      * @return the {@link JobDetail} object for the requested job
      */
     public JobDetail getJob(final String jobId, final User user) {
@@ -70,11 +69,28 @@ public class JobTracker {
      * @return a {@link CloseableIterable} containing all of the job details
      */
     public CloseableIterable<JobDetail> getAllJobs(final User user) {
+
+        return getAllJobsMatching(user, jd -> true);
+    }
+
+    /**
+     * Get all scheduled jobs from the job tracker cache.
+     *
+     * @return a {@link CloseableIterable} containing all of the scheduled job details
+     */
+    public CloseableIterable<JobDetail> getAllScheduledJobs() {
+
+        return getAllJobsMatching(new User(), jd -> jd.getStatus().equals(JobStatus.SCHEDULED_PARENT));
+    }
+
+    private CloseableIterable<JobDetail> getAllJobsMatching(final User user, final Predicate<JobDetail> jobDetailPredicate) {
+
         final Set<String> jobIds = CacheServiceLoader.getService().getAllKeysFromCache(CACHE_NAME);
         final List<JobDetail> jobs = jobIds.stream()
                 .filter(Objects::nonNull)
                 .map(jobId -> getJob(jobId, user))
                 .filter(Objects::nonNull)
+                .filter(jobDetailPredicate)
                 .collect(Collectors.toList());
 
         return new WrappedCloseableIterable<>(jobs);

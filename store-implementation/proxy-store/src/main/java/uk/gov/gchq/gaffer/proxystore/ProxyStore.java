@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public class ProxyStore extends Store {
     protected void checkDelegateStoreStatus() throws StoreException {
         final URL url = getProperties().getGafferUrl("graph/status");
         final LinkedHashMap status = doGet(url, new TypeReferenceImpl.Map(), null);
-        LOGGER.info("Delegate REST API status: {}", status.get("description"));
+        LOGGER.info("Delegate REST API status: {}", status.get("status"));
     }
 
     @SuppressFBWarnings(value = "SIC_INNER_SHOULD_BE_STATIC_ANON")

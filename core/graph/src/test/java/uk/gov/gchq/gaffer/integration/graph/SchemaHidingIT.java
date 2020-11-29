@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,9 +66,16 @@ public abstract class SchemaHidingIT {
             .build();
 
     protected final String storePropertiesPath;
+    protected final StoreProperties storeProperties;
 
     public SchemaHidingIT(final String storePropertiesPath) {
         this.storePropertiesPath = storePropertiesPath;
+        this.storeProperties = StoreProperties.loadStoreProperties(StreamUtil.openStream(getClass(), storePropertiesPath));
+    }
+
+    public SchemaHidingIT(final StoreProperties storeProperties) {
+        this.storePropertiesPath = "";
+        this.storeProperties = storeProperties;
     }
 
     @Before
@@ -84,7 +91,7 @@ public abstract class SchemaHidingIT {
     protected abstract void cleanUp();
 
     protected Store createStore(final Schema schema) throws IOException {
-        return Store.createStore("graphId", schema, StoreProperties.loadStoreProperties(StreamUtil.openStream(getClass(), storePropertiesPath)));
+        return Store.createStore("graphId", schema, storeProperties);
     }
 
     @SuppressWarnings("unchecked")

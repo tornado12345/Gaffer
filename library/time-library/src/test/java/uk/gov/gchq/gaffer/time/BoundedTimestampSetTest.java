@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package uk.gov.gchq.gaffer.time;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import uk.gov.gchq.gaffer.JSONSerialisationTest;
 import uk.gov.gchq.gaffer.commonutil.CommonTimeUtil;
@@ -31,10 +31,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BoundedTimestampSetTest extends JSONSerialisationTest<BoundedTimestampSet>{
+public class BoundedTimestampSetTest extends JSONSerialisationTest<BoundedTimestampSet> {
 
     @Test
     public void shouldSerialiseAndDeserialise() throws SerialisationException {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class GetElementsIT extends AbstractStoreIT {
             Arrays.asList(
                     (ElementId) new EdgeSeed(SOURCE_1, "dest2DoesNotExist", false),
                     new EdgeSeed("source2DoesNotExist", DEST_1, false),
-                    new EdgeSeed(SOURCE_1, DEST_1, true));// does not exist
+                    new EdgeSeed(SOURCE_1, DEST_1, true)); // does not exist
 
     public static final Collection<ElementId> ENTITY_SEEDS_DONT_EXIST =
             Collections.singletonList(

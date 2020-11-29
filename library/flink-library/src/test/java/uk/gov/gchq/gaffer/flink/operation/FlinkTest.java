@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Crown Copyright
+ * Copyright 2017-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ public abstract class FlinkTest {
 
     public static void verifyElements(final Graph graph) throws OperationException, InterruptedException {
         // Wait for the elements to be ingested.
-        Thread.sleep(2000);
+        Thread.sleep(3000);
         final Iterable<? extends Element> allElements = graph.execute(new GetAllElements(), new User());
         ElementUtil.assertElementEquals(EXPECTED_ELEMENTS, allElements);
     }

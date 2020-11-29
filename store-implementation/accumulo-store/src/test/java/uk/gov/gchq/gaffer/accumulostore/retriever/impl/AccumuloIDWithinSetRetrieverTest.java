@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,13 @@ import org.apache.hadoop.util.bloom.BloomFilter;
 import org.apache.hadoop.util.bloom.Key;
 import org.apache.hadoop.util.hash.Hash;
 import org.hamcrest.core.IsCollectionContaining;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import uk.gov.gchq.gaffer.accumulostore.AccumuloProperties;
 import uk.gov.gchq.gaffer.accumulostore.AccumuloStore;
-import uk.gov.gchq.gaffer.accumulostore.SingleUseMockAccumuloStore;
+import uk.gov.gchq.gaffer.accumulostore.SingleUseMiniAccumuloStore;
 import uk.gov.gchq.gaffer.accumulostore.operation.impl.GetElementsWithinSet;
 import uk.gov.gchq.gaffer.accumulostore.retriever.AccumuloRetriever;
 import uk.gov.gchq.gaffer.accumulostore.utils.AccumuloPropertyNames;
@@ -50,54 +49,51 @@ import uk.gov.gchq.gaffer.store.StoreException;
 import uk.gov.gchq.gaffer.store.schema.Schema;
 import uk.gov.gchq.gaffer.user.User;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class AccumuloIDWithinSetRetrieverTest {
 
     private static View defaultView;
-    private static AccumuloStore byteEntityStore;
-    private static AccumuloStore gaffer1KeyStore;
-    private static final Schema schema = Schema.fromJson(StreamUtil.schemas(AccumuloIDWithinSetRetrieverTest.class));
+
+    private static final Schema SCHEMA = Schema.fromJson(StreamUtil.schemas(AccumuloIDWithinSetRetrieverTest.class));
     private static final AccumuloProperties PROPERTIES = AccumuloProperties.loadStoreProperties(StreamUtil.storeProps(AccumuloIDWithinSetRetrieverTest.class));
     private static final AccumuloProperties CLASSIC_PROPERTIES = AccumuloProperties.loadStoreProperties(StreamUtil.openStream(AccumuloIDWithinSetRetrieverTest.class, "/accumuloStoreClassicKeys.properties"));
+    private static final AccumuloStore BYTE_ENTITY_STORE = new SingleUseMiniAccumuloStore();
+    private static final AccumuloStore GAFFER_1_KEY_STORE = new SingleUseMiniAccumuloStore();
 
-    @BeforeClass
-    public static void setup() throws StoreException, IOException {
-        byteEntityStore = new SingleUseMockAccumuloStore();
-        gaffer1KeyStore = new SingleUseMockAccumuloStore();
+    @BeforeAll
+    public static void setup() throws StoreException {
         defaultView = new View.Builder().edge(TestGroups.EDGE).entity(TestGroups.ENTITY).build();
     }
 
-    @Before
+    @BeforeEach
     public void reInitialise() throws StoreException {
-        byteEntityStore.initialise("byteEntityGraph", schema, PROPERTIES);
-        gaffer1KeyStore.initialise("gaffer1Graph", schema, CLASSIC_PROPERTIES);
-        setupGraph(byteEntityStore);
-        setupGraph(gaffer1KeyStore);
-    }
+        BYTE_ENTITY_STORE.initialise("byteEntityGraph", SCHEMA, PROPERTIES);
+        GAFFER_1_KEY_STORE.initialise("gaffer1Graph", SCHEMA, CLASSIC_PROPERTIES);
 
-    @AfterClass
-    public static void tearDown() {
-        byteEntityStore = null;
-        gaffer1KeyStore = null;
+        setupGraph(BYTE_ENTITY_STORE);
+        setupGraph(GAFFER_1_KEY_STORE);
     }
-
 
     private Set<Element> returnElementsFromOperation(final AccumuloStore store, final GetElementsWithinSet operation, final User user, final boolean loadIntoMemory) throws StoreException {
-
-        final AccumuloRetriever<?, Element> retriever = new AccumuloIDWithinSetRetriever(store, operation, user, loadIntoMemory);
         final Set<Element> results = new HashSet<>();
+        AccumuloRetriever<?, Element> retriever = null;
+        try {
+            retriever = new AccumuloIDWithinSetRetriever(store, operation, user, loadIntoMemory);
 
-        for (final Element elm : retriever) {
-            results.add(elm);
+            for (final Element elm : retriever) {
+                results.add(elm);
+            }
+        } finally {
+            if (retriever != null) {
+                retriever.close();
+            }
         }
-        retriever.close();
 
         return results;
     }
@@ -107,25 +103,27 @@ public class AccumuloIDWithinSetRetrieverTest {
      * (unless the return edges only option has been set on the {@link GetElementsWithinSet}). It is desirable
      * for {@link uk.gov.gchq.gaffer.data.element.Entity}s to be returned as a common use-case is to use this method to complete the "half-hop"
      * in a breadth-first search, and then getting all the information about the nodes is often required.
+     *
+     * @throws StoreException if StoreException
      */
     @Test
     public void shouldGetCorrectEdgesInMemoryFromByteEntityStore() throws StoreException {
-        shouldGetCorrectEdges(true, byteEntityStore);
+        shouldGetCorrectEdges(true, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldGetCorrectEdgesInMemoryFromGaffer1Store() throws StoreException {
-        shouldGetCorrectEdges(true, gaffer1KeyStore);
+        shouldGetCorrectEdges(true, GAFFER_1_KEY_STORE);
     }
 
     @Test
     public void shouldGetCorrectEdgesFromByteEntityStore() throws StoreException {
-        shouldGetCorrectEdges(false, byteEntityStore);
+        shouldGetCorrectEdges(false, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldGetCorrectEdgesFromGaffer1Store() throws StoreException {
-        shouldGetCorrectEdges(false, gaffer1KeyStore);
+        shouldGetCorrectEdges(false, GAFFER_1_KEY_STORE);
     }
 
     private void shouldGetCorrectEdges(final boolean loadIntoMemory, final AccumuloStore store) throws StoreException {
@@ -178,12 +176,12 @@ public class AccumuloIDWithinSetRetrieverTest {
      */
     @Test
     public void shouldDealWithOutgoingEdgesOnlyOptionGaffer1KeyStore() {
-        shouldDealWithOutgoingEdgesOnlyOption(gaffer1KeyStore);
+        shouldDealWithOutgoingEdgesOnlyOption(GAFFER_1_KEY_STORE);
     }
 
     @Test
     public void shouldDealWithOutgoingEdgesOnlyOptionByteEntityStore() {
-        shouldDealWithOutgoingEdgesOnlyOption(byteEntityStore);
+        shouldDealWithOutgoingEdgesOnlyOption(BYTE_ENTITY_STORE);
     }
 
     private void shouldDealWithOutgoingEdgesOnlyOption(final AccumuloStore store) {
@@ -208,25 +206,27 @@ public class AccumuloIDWithinSetRetrieverTest {
 
     /**
      * Tests that the directed edges only and undirected edges only options are respected.
+     *
+     * @throws StoreException if StoreException
      */
     @Test
     public void shouldDealWithDirectedEdgesOnlyInMemoryByteEntityStore() throws StoreException {
-        shouldDealWithDirectedEdgesOnlyOption(true, byteEntityStore);
+        shouldDealWithDirectedEdgesOnlyOption(true, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldDealWithDirectedEdgesOnlyInMemoryGaffer1Store() throws StoreException {
-        shouldDealWithDirectedEdgesOnlyOption(true, gaffer1KeyStore);
+        shouldDealWithDirectedEdgesOnlyOption(true, GAFFER_1_KEY_STORE);
     }
 
     @Test
     public void shouldDealWithDirectedEdgesOnlyByteEntityStore() throws StoreException {
-        shouldDealWithDirectedEdgesOnlyOption(false, byteEntityStore);
+        shouldDealWithDirectedEdgesOnlyOption(false, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldDealWithDirectedEdgesOnlyGaffer1Store() throws StoreException {
-        shouldDealWithDirectedEdgesOnlyOption(false, gaffer1KeyStore);
+        shouldDealWithDirectedEdgesOnlyOption(false, GAFFER_1_KEY_STORE);
     }
 
     private void shouldDealWithDirectedEdgesOnlyOption(final boolean loadIntoMemory, final AccumuloStore store) throws StoreException {
@@ -263,25 +263,27 @@ public class AccumuloIDWithinSetRetrieverTest {
      * Tests that false positives are filtered out. It does this by explicitly finding a false positive (i.e. something
      * that matches the Bloom filter but that wasn't put into the filter) and adding that to the data, and then
      * checking that isn't returned.
+     *
+     * @throws StoreException if StoreException
      */
     @Test
     public void shouldDealWithFalsePositivesInMemoryByteEntityStore() throws StoreException {
-        shouldDealWithFalsePositives(true, byteEntityStore);
+        shouldDealWithFalsePositives(true, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldDealWithFalsePositivesInMemoryGaffer1Store() throws StoreException {
-        shouldDealWithFalsePositives(true, gaffer1KeyStore);
+        shouldDealWithFalsePositives(true, GAFFER_1_KEY_STORE);
     }
 
     @Test
     public void shouldDealWithFalsePositivesByteEntityStore() throws StoreException {
-        shouldDealWithFalsePositives(false, byteEntityStore);
+        shouldDealWithFalsePositives(false, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldDealWithFalsePositivesGaffer1Store() throws StoreException {
-        shouldDealWithFalsePositives(false, gaffer1KeyStore);
+        shouldDealWithFalsePositives(false, GAFFER_1_KEY_STORE);
     }
 
     private void shouldDealWithFalsePositives(final boolean loadIntoMemory, final AccumuloStore store) throws StoreException {
@@ -346,25 +348,27 @@ public class AccumuloIDWithinSetRetrieverTest {
     /**
      * Tests that standard filtering (e.g. by summary type, or by time window, or to only receive entities) is still
      * applied.
+     *
+     * @throws StoreException if StoreException
      */
     @Test
     public void shouldStillApplyOtherFilterByteEntityStoreInMemoryEntities() throws StoreException {
-        shouldStillApplyOtherFilter(true, byteEntityStore);
+        shouldStillApplyOtherFilter(true, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldStillApplyFilterGaffer1StoreInMemoryEntities() throws StoreException {
-        shouldStillApplyOtherFilter(true, gaffer1KeyStore);
+        shouldStillApplyOtherFilter(true, GAFFER_1_KEY_STORE);
     }
 
     @Test
     public void shouldStillApplyOtherFilterByteEntityStore() throws StoreException {
-        shouldStillApplyOtherFilter(false, byteEntityStore);
+        shouldStillApplyOtherFilter(false, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldStillApplyFilterGaffer1Store() throws StoreException {
-        shouldStillApplyOtherFilter(false, gaffer1KeyStore);
+        shouldStillApplyOtherFilter(false, GAFFER_1_KEY_STORE);
     }
 
     private void shouldStillApplyOtherFilter(final boolean loadIntoMemory, final AccumuloStore store) throws StoreException {
@@ -405,22 +409,22 @@ public class AccumuloIDWithinSetRetrieverTest {
 
     @Test
     public void shouldReturnMoreElementsThanFitInBatchScannerByteStoreInMemory() throws StoreException {
-        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(true, byteEntityStore);
+        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(true, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldReturnMoreElementsThanFitInBatchScannerGaffer1StoreInMemory() throws StoreException {
-        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(true, gaffer1KeyStore);
+        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(true, GAFFER_1_KEY_STORE);
     }
 
     @Test
     public void shouldReturnMoreElementsThanFitInBatchScannerByteStore() throws StoreException {
-        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(false, byteEntityStore);
+        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(false, BYTE_ENTITY_STORE);
     }
 
     @Test
     public void shouldReturnMoreElementsThanFitInBatchScannerGaffer1Store() throws StoreException {
-        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(false, gaffer1KeyStore);
+        shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(false, GAFFER_1_KEY_STORE);
     }
 
     private void shouldLoadElementsWhenMoreElementsThanFitInBatchScanner(final boolean loadIntoMemory, final AccumuloStore store) throws StoreException {

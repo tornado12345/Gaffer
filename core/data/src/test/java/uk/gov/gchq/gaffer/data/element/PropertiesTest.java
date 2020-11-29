@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,53 +16,41 @@
 
 package uk.gov.gchq.gaffer.data.element;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(MockitoJUnitRunner.class)
 public class PropertiesTest {
+
     @Test
     public void shouldConstructEmptyProperties() {
-        // Given
-
-        // When
         final Properties properties = new Properties();
 
-        // Then
         assertTrue(properties.isEmpty());
     }
 
     @Test
     public void shouldConstructPropertiesWithOtherProperties() {
-        // Given
         final Map<String, Object> otherProperties = new HashMap<>();
         otherProperties.put("propertyName", "property value");
 
-        // When
         final Properties properties = new Properties(otherProperties);
 
-        // Then
         assertEquals(1, properties.size());
         assertEquals("property value", properties.get("propertyName"));
     }
 
     @Test
     public void shouldConstructPropertiesWithProperty() {
-        // Given
-        // When
         final Properties properties = new Properties("propertyName", "property value");
 
-        // Then
         assertEquals(1, properties.size());
         assertEquals("property value", properties.get("propertyName"));
     }
@@ -140,11 +128,9 @@ public class PropertiesTest {
 
     @Test
     public void shouldNotAddPropertyIfPropertyNameIsNull() {
-        // When
         final Properties properties = new Properties();
         properties.put(null, "propertyValue1");
 
-        // Then
         assertEquals(0, properties.size());
     }
 

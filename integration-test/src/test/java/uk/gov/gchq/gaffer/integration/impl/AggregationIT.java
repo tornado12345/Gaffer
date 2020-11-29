@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Crown Copyright
+ * Copyright 2016-2020 Crown Copyright
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,12 +51,12 @@ import static org.junit.Assert.assertNotNull;
 import static uk.gov.gchq.gaffer.commonutil.TestGroups.ENTITY_2;
 
 public class AggregationIT extends AbstractStoreIT {
-    private final String AGGREGATED_SOURCE = SOURCE + 6;
-    private final String AGGREGATED_DEST = DEST + 6;
+    private static final String AGGREGATED_SOURCE = SOURCE + 6;
+    private static final String AGGREGATED_DEST = DEST + 6;
 
-    private final int NON_AGGREGATED_ID = 8;
-    private final String NON_AGGREGATED_SOURCE = SOURCE + NON_AGGREGATED_ID;
-    private final String NON_AGGREGATED_DEST = DEST + NON_AGGREGATED_ID;
+    private static final int NON_AGGREGATED_ID = 8;
+    private static final String NON_AGGREGATED_SOURCE = SOURCE + NON_AGGREGATED_ID;
+    private static final String NON_AGGREGATED_DEST = DEST + NON_AGGREGATED_ID;
 
     @Override
     public void _setup() throws Exception {
